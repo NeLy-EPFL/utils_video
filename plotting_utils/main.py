@@ -39,4 +39,4 @@ def ffmpeg(command, pixel_format="yuv420p"):
     command_list = command.split()
     if not "-pix_fmt" in command_list:
         command_list = command_list[:-1] + ["-pix_fmt", pixel_format] + [command_list[-1],]
-    subprocess.Popen(["ffmpeg",] + command_list)
+    subprocess.run(["ffmpeg",] + command_list)

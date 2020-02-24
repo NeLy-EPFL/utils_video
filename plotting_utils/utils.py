@@ -29,11 +29,17 @@ def resize_shape(shape, original_shape, allow_upsampling=False):
         Resized shape.
     """
     if len(shape) != 2:
-        raise ValueError("Shape has to be of length 2.")
+        raise ValueError("shape has to be of length 2.")
+    if len(original_shape) != 2:
+        raise ValueError("original_shape has to be of length 2.")
     if shape[0] % 1 != 0 or shape[1] % 1 != 0:
         raise ValueError("Entries of shape have to be integers.")
     if original_shape[0] % 1 != 0 or original_shape[1] % 1 != 0:
         raise ValueError("Entries of original_shape have to be integers.")
+    if np.any(np.array(shape) < -1):
+        raise ValueError("The values of shape cannot be smaller than -1.")
+    if np.any(np.array(original_shape) < -1):
+        raise ValueError("The values of original_shape cannot be smaller than -1.")
     
     if shape[0] == -1 and shape[1] == -1:
         new_shape = original_shape
@@ -44,7 +50,7 @@ def resize_shape(shape, original_shape, allow_upsampling=False):
         ratio = original_shape[1] / original_shape[0]
         new_shape = (shape[0], int(shape[0] * ratio))
     else:
-        return original_shape
+        new_shape = shape
     if not allow_upsampling:
         if new_shape[0] > original_shape[0] and new_shape[1] > original_shape[1]:
             return original_shape

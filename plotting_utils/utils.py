@@ -131,3 +131,17 @@ def add_colorbar(frames, cbar, pos, alpha=255):
         return np.concatenate((frames, cbar), axis=1)
     elif pos == "top":
         return np.concatenate((cbar, frames), axis=1)
+
+def load_video(path):
+    cap = cv2.VideoCapture(path)
+    if cap.isOpened() == False:
+        raise ValueError(f"Could not open {path}.")
+    frames = []
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret == True:
+            frames.append(frame)
+        else:
+            break
+    cap.release()
+    return np.array(frames)

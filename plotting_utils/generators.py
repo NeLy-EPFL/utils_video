@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from .utils import grid_size, colorbar, add_colorbar
+from .utils import grid_size, colorbar, add_colorbar, load_video
 
 def dff_trials(snippets, synchronization_indices=None):
     """
@@ -67,6 +67,33 @@ def beh_trials(snippets, synchronization_indices=None):
     return frame_generator()
 
 
+def merge_videos(paths, synchronization_indices=None):
+    """
+    This function returns a generator that
+    yields frames with the given files.
+
+    Parameters
+    ----------
+    paths : list of strings
+        List of the paths to the video files that should be merged.
+
+    Returns
+    -------
+    frame_generator : generator
+        A generator that yields individual
+        video frames.
+    """
+    snippets = [load_video(path) for path in paths]
+
+    frames = _grid_frames(snippets, synchronization_indices)
+
+    def frame_generator():
+        for frame in frames:
+            yield frame
+
+    return frame_generator()
+
+
 def _grid_frames(snippets, synchronization_indices=None):
     # Check that all snippets have the same frame size.
     if not len(set([snippet.shape[1] for snippet in snippets])) and len(set([snippet.shape[2] for snippet in snippets])):
@@ -76,6 +103,12 @@ def _grid_frames(snippets, synchronization_indices=None):
     lengths = [len(stack) for stack in snippets]
     max_length = max(lengths)
     frame_size = snippets[0].shape[1:]
+    if np.all([snippet.ndim == 4 for snippet in snippets]):
+        n_channels = snippets[0].shape[-1]
+    elif np.all([snippet.ndim == 3 for snippet in snippets]):
+        n_channels = 1
+    else:
+        raise ValueError("Snippets don't have the same number of channels.")
     dtype = snippets[0].dtype
     n_rows, n_cols = grid_size(n_snippets, frame_size)
 
@@ -84,7 +117,8 @@ def _grid_frames(snippets, synchronization_indices=None):
     elif len(synchronization_indices) != n_snippets:
         raise ValueError("Number of synchronization_indices provided doesn't match the number of snippets.")
     
-    frames = np.zeros((max_length, frame_size[0] * n_rows, frame_size[1] * n_cols), dtype=dtype)
+    frames = np.zeros((max_length, frame_size[0] * n_rows, frame_size[1] * n_cols, n_channels), dtype=dtype)
+    frames = np.squeeze(frames)
     for i, stack in enumerate(snippets):
         row_idx = int(i / n_cols)
         col_idx = i % n_cols

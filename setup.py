@@ -13,6 +13,6 @@ setup(
     description="Basic utility functions for plotting videos with 2p data and behaviour.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    #url="https://github.com/NeLy-EPFL/utils2p",
+    url="https://github.com/NeLy-EPFL/plotting_utils.git",
     install_requires=["pytest", "numpy", "matplotlib", "opencv-python", "tqdm"],
 )

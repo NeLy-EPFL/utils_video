@@ -80,6 +80,10 @@ def grid_size(n_elements, element_size, ratio=4/3):
     n_cols : int
         Number of columns.
     """
+    if not isinstance(n_elements, int):
+        raise ValueError("n_elements has to be of type int.")
+    if not len(element_size) == 2:
+        raise ValueError("element_size has to be of length 2.")
     target_ratio = ratio / (element_size[1] / element_size[0])
     n_rows = int(round(np.sqrt(n_elements / target_ratio)))
     n_cols = math.ceil(n_elements / n_rows)

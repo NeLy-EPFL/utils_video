@@ -1,7 +1,10 @@
+import glob
+
 import numpy as np
 from matplotlib import pyplot as plt
+import cv2
 
-from .utils import grid_size, colorbar, add_colorbar, load_video
+from .utils import grid_size, colorbar, add_colorbar, load_video, natsorted
 
 def dff_trials(snippets, synchronization_indices=None):
     """
@@ -153,3 +156,18 @@ def beh_overlay(snippets, synchronization_indices):
         for frame in frames:
             yield frame
     return frame_generator()
+
+
+def images(path):
+    images = glob.glob(path)
+    if len(images) == 0:
+        raise FileNotFoundError(f"No files match {path}.")
+    images = natsorted(images) 
+    for image_path in images:
+        yield cv2.imread(image_path)
+
+
+def add_text(generator, text, pos=(10, 240), font=cv2.FONT_HERSHEY_SIMPLEX, scale=1, color=(255,255,255), line_type=2):
+    for i, img in enumerate(generator):
+        cv2.putText(img, text[i], pos, font, scale, color, line_type)
+        yield img

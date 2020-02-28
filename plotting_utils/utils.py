@@ -1,4 +1,5 @@
 import math
+import re
 
 import cv2
 from matplotlib import pyplot as plt
@@ -155,3 +156,21 @@ def load_video(path):
             break
     cap.release()
     return np.array(frames)
+
+def natsorted(list_of_strs):
+    """
+    Sorts a list of strings in natural order.
+
+    Parameters
+    ----------
+    list_of_strs : list of strings
+        List to be sorted.
+
+    Returns
+    -------
+    sorted_l : list of strings
+        Naturally sorted list.
+    """
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
+    return sorted(list_of_strs, key=alphanum_key)

@@ -70,7 +70,7 @@ def beh_trials(snippets, synchronization_indices=None):
     return frame_generator()
 
 
-def merge_videos(paths, synchronization_indices=None):
+def merge_videos(paths, synchronization_indices=None, sort=False):
     """
     This function returns a generator that
     yields frames with the given files.
@@ -79,6 +79,8 @@ def merge_videos(paths, synchronization_indices=None):
     ----------
     paths : list of strings
         List of the paths to the video files that should be merged.
+    sort : boolean
+        Whether to sort the paths according to natural order.
 
     Returns
     -------
@@ -86,6 +88,8 @@ def merge_videos(paths, synchronization_indices=None):
         A generator that yields individual
         video frames.
     """
+    if sort:
+        paths = natsorted(paths)
     snippets = [load_video(path) for path in paths]
 
     frames = _grid_frames(snippets, synchronization_indices)
@@ -108,6 +112,7 @@ def _grid_frames(snippets, synchronization_indices=None):
     frame_size = snippets[0].shape[1:]
     if np.all([snippet.ndim == 4 for snippet in snippets]):
         n_channels = snippets[0].shape[-1]
+        frame_size = frame_size[:-1]
     elif np.all([snippet.ndim == 3 for snippet in snippets]):
         n_channels = 1
     else:

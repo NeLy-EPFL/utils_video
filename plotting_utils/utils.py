@@ -60,7 +60,7 @@ def resize_shape(shape, original_shape, allow_upsampling=False):
 
 def find_greatest_common_resolution(shapes, axis):
     # Find highest resolution
-    target_resolution = np.max(shapes, axis=axis)
+    target_resolution = np.max(shapes, axis=0)
 
     # Prepare resolution for resize_shape based on axis
     desired_resolution = [-1, -1]

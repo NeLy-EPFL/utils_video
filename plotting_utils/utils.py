@@ -109,6 +109,13 @@ def grid_size(n_elements, element_size, ratio=4/3):
     return n_rows, n_cols
 
 
+def fig_to_array(fig):
+    fig.canvas.draw()
+    data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    return data
+
+
 def colorbar(norm, cmap, size, orientation="vertical"):
     if orientation == "horizontal":
         figsize = (math.ceil(size[1] / 100), 10)
@@ -126,9 +133,7 @@ def colorbar(norm, cmap, size, orientation="vertical"):
         else:
             color_bar.ax.set_ylabel(r"%$\frac{\Delta F}{F}$", rotation=0, color="white")
         ax.remove()
-        fig.canvas.draw()
-        data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        data = fig_to_array(fig)
         plt.close()
     if orientation == "horizontal":
         data = data[750:900, :]

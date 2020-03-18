@@ -1,10 +1,11 @@
 import glob
+import itertools
 
 import numpy as np
 from matplotlib import pyplot as plt
 import cv2
 
-from .utils import grid_size, colorbar, add_colorbar, load_video, natsorted
+from .utils import grid_size, colorbar, add_colorbar, load_video, natsorted, resize_shape, find_greatest_common_resolution
 
 def dff_trials(snippets, synchronization_indices=None):
     """
@@ -176,3 +177,25 @@ def add_text(generator, text, pos=(10, 240), font=cv2.FONT_HERSHEY_SIMPLEX, scal
     for i, img in enumerate(generator):
         cv2.putText(img, text[i], pos, font, scale, color, line_type)
         yield img
+
+def stack(generators):
+    def frame_generator():
+        # Extract shapes of images
+        shapes = []
+        for i, generator in enumerate(generators):
+            img = next(generator)
+            shapes.append(img.shape)
+            generators[i] = itertools.chain([img,], generator)
+
+        # Find target shapes
+        shapes = find_greatest_common_resolution(shapes, axis=1) 
+
+        for imgs in zip(*generators):
+            # Resize images
+            imgs = list(imgs)
+            for i, (img, shape) in enumerate(zip(imgs, shapes)):
+                imgs[i] = cv2.resize(img, shape[::-1])
+
+            yield np.concatenate(imgs, axis=0)
+
+    return frame_generator()

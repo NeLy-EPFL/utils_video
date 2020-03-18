@@ -56,6 +56,24 @@ def resize_shape(shape, original_shape, allow_upsampling=False):
         if new_shape[0] > original_shape[0] and new_shape[1] > original_shape[1]:
             return original_shape
     return new_shape
+        
+
+def find_greatest_common_resolution(shapes, axis):
+    # Find highest resolution
+    target_resolution = np.max(shapes, axis=axis)
+
+    # Prepare resolution for resize_shape based on axis
+    desired_resolution = [-1, -1]
+    desired_resolution[axis] = target_resolution[axis]
+
+    # make shapes mutable so they can be overwritten by resized shapes
+    shapes = list(shapes)
+
+    # find shapes for resizing
+    for i, shape in enumerate(shapes):
+        shapes[i] = resize_shape(desired_resolution, shape, allow_upsampling=True)
+
+    return shapes
 
 
 def grid_size(n_elements, element_size, ratio=4/3):

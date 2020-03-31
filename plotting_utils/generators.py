@@ -184,7 +184,7 @@ def stack(generators):
         shapes = []
         for i, generator in enumerate(generators):
             img = next(generator)
-            shapes.append(img.shape)
+            shapes.append(img.shape[:2])
             generators[i] = itertools.chain([img,], generator)
 
         # Find target shapes

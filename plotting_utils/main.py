@@ -7,17 +7,19 @@ from tqdm import tqdm
 from .utils import *
 
 
-def make_video(video_path, frame_generator, fps, output_shape=(-1, 2880)):
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+def make_video(video_path, frame_generator, fps, output_shape=(-1, 2880), n_frames=-1):
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     first_frame = next(frame_generator)
     frame_generator = itertools.chain([first_frame], frame_generator)
     output_shape = resize_shape(output_shape, first_frame.shape[:2])
     video_writer = cv2.VideoWriter(video_path, fourcc, fps, output_shape[::-1])
 
-    for img in tqdm(frame_generator):
+    for frame, img in tqdm(enumerate(frame_generator)):
         resized = cv2.resize(img, output_shape[::-1])
         rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
         video_writer.write(rgb)
+        if frame == n_frames - 1:
+            break
 
     video_writer.release()
 
@@ -38,5 +40,7 @@ def ffmpeg(command, pixel_format="yuv420p"):
     """
     command_list = command.split()
     if not "-pix_fmt" in command_list:
-        command_list = command_list[:-1] + ["-pix_fmt", pixel_format] + [command_list[-1],]
+        command_list = (
+            command_list[:-1] + ["-pix_fmt", pixel_format] + [command_list[-1],]
+        )
     subprocess.run(["ffmpeg",] + command_list, check=True)

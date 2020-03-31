@@ -5,7 +5,16 @@ import numpy as np
 from matplotlib import pyplot as plt
 import cv2
 
-from .utils import grid_size, colorbar, add_colorbar, load_video, natsorted, resize_shape, find_greatest_common_resolution
+from .utils import (
+    grid_size,
+    colorbar,
+    add_colorbar,
+    load_video,
+    natsorted,
+    resize_shape,
+    find_greatest_common_resolution,
+)
+
 
 def dff_trials(snippets, synchronization_indices=None):
     """
@@ -33,7 +42,7 @@ def dff_trials(snippets, synchronization_indices=None):
     cbar = colorbar(norm, cmap, (frames.shape[1], -1))
     frames = cmap(norm(frames))
     frames = (frames * 255).astype(np.uint8)
-    frames = add_colorbar(frames, cbar, 'right')
+    frames = add_colorbar(frames, cbar, "right")
 
     def frame_generator():
         for frame in frames:
@@ -104,7 +113,9 @@ def merge_videos(paths, synchronization_indices=None, sort=False):
 
 def _grid_frames(snippets, synchronization_indices=None):
     # Check that all snippets have the same frame size.
-    if not len(set([snippet.shape[1] for snippet in snippets])) and len(set([snippet.shape[2] for snippet in snippets])):
+    if not len(set([snippet.shape[1] for snippet in snippets])) and len(
+        set([snippet.shape[2] for snippet in snippets])
+    ):
         raise ValueError("Snippets do not have the same frame size.")
 
     n_snippets = len(snippets)
@@ -122,16 +133,27 @@ def _grid_frames(snippets, synchronization_indices=None):
     n_rows, n_cols = grid_size(n_snippets, frame_size)
 
     if synchronization_indices is None:
-        synchronization_indices = [np.clip(np.arange(max_length), None, length - 1) for length in lengths]
+        synchronization_indices = [
+            np.clip(np.arange(max_length), None, length - 1) for length in lengths
+        ]
     elif len(synchronization_indices) != n_snippets:
-        raise ValueError("Number of synchronization_indices provided doesn't match the number of snippets.")
-    
-    frames = np.zeros((max_length, frame_size[0] * n_rows, frame_size[1] * n_cols, n_channels), dtype=dtype)
+        raise ValueError(
+            "Number of synchronization_indices provided doesn't match the number of snippets."
+        )
+
+    frames = np.zeros(
+        (max_length, frame_size[0] * n_rows, frame_size[1] * n_cols, n_channels),
+        dtype=dtype,
+    )
     frames = np.squeeze(frames)
     for i, stack in enumerate(snippets):
         row_idx = int(i / n_cols)
         col_idx = i % n_cols
-        frames[:, row_idx * frame_size[0] : (row_idx + 1) * frame_size[0], col_idx * frame_size[1] : (col_idx + 1) * frame_size[1]] = stack[synchronization_indices[i]]
+        frames[
+            :,
+            row_idx * frame_size[0] : (row_idx + 1) * frame_size[0],
+            col_idx * frame_size[1] : (col_idx + 1) * frame_size[1],
+        ] = stack[synchronization_indices[i]]
     return frames
 
 
@@ -152,15 +174,20 @@ def beh_overlay(snippets, synchronization_indices):
     denominator = np.zeros(max_length)
     for i, snippet in enumerate(snippets):
         start = np.where(synchronization_indices[i] == 0)[0][-1]
-        stop = np.where(synchronization_indices[i] == synchronization_indices[i][-1])[0][0] + 1
-        #frames[start : stop] += snippet
-        frames[start : stop] = np.maximum(frames[start : stop], snippet)
-        denominator[start : stop] += 1
-    #frames = frames / denominator[:, np.newaxis, np.newaxis]
+        stop = (
+            np.where(synchronization_indices[i] == synchronization_indices[i][-1])[0][0]
+            + 1
+        )
+        # frames[start : stop] += snippet
+        frames[start:stop] = np.maximum(frames[start:stop], snippet)
+        denominator[start:stop] += 1
+    # frames = frames / denominator[:, np.newaxis, np.newaxis]
     frames = frames.astype(dtype)
+
     def frame_generator():
         for frame in frames:
             yield frame
+
     return frame_generator()
 
 
@@ -168,15 +195,27 @@ def images(path):
     images = glob.glob(path)
     if len(images) == 0:
         raise FileNotFoundError(f"No files match {path}.")
-    images = natsorted(images) 
+    images = natsorted(images)
     for image_path in images:
         yield cv2.imread(image_path)
 
 
-def add_text(generator, text, pos=(10, 240), font=cv2.FONT_HERSHEY_SIMPLEX, scale=1, color=(255,255,255), line_type=2):
+def add_text(
+    generator,
+    text,
+    pos=(10, 240),
+    font=cv2.FONT_HERSHEY_SIMPLEX,
+    scale=1,
+    color=(255, 255, 255),
+    line_type=2,
+):
     for i, img in enumerate(generator):
-        cv2.putText(img, text[i], pos, font, scale, color, line_type)
+        for j, line in enumerate(text[i].split("\n")):
+            cv2.putText(
+                img, line, (pos[0], pos[1] + j * 40), font, scale, color, line_type
+            )
         yield img
+
 
 def stack(generators):
     def frame_generator():
@@ -184,11 +223,11 @@ def stack(generators):
         shapes = []
         for i, generator in enumerate(generators):
             img = next(generator)
-            shapes.append(img.shape)
+            shapes.append(img.shape[:2])
             generators[i] = itertools.chain([img,], generator)
 
         # Find target shapes
-        shapes = find_greatest_common_resolution(shapes, axis=1) 
+        shapes = find_greatest_common_resolution(shapes, axis=1)
 
         for imgs in zip(*generators):
             # Resize images

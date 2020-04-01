@@ -8,6 +8,19 @@ from .utils import *
 
 
 def make_video(video_path, frame_generator, fps, output_shape=(-1, 2880), n_frames=-1):
+    """
+    This function writes a video to file with all frames that
+    the `frame_generator` yields.
+
+    Parameters
+    ----------
+    video_path : string
+        Name/path to the output file.
+    frame_generator : generator
+        Generator yielding individual frames.
+    fps : int
+        Frame rate in frames per second.
+    """
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     first_frame = next(frame_generator)
     frame_generator = itertools.chain([first_frame], frame_generator)

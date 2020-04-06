@@ -58,7 +58,27 @@ def resize_shape(shape, original_shape, allow_upsampling=False):
     return new_shape
         
 
-def find_greatest_common_resolution(shapes, axis):
+def match_greatest_resolution(shapes, axis):
+    """
+    This function finds the greatest resolution of
+    all the given shapes along the given axis.
+    It then converts all the other shapes to match the
+    greatest resolution along the given axis, respecting
+    the aspect ratio when resizing the other axes.
+
+    Parameters
+    ----------
+    shapes : list or tuple of 2-tuples of integers
+        List of the shapes of the different images.
+    axis : int
+        The integer specifying the axis
+
+    Returns
+    -------
+    shapes : list of 2-tuples of integers
+        New resized shapes with all shapes along axis
+        being equal to the maximum along this axis.
+    """
     # Find highest resolution
     target_resolution = np.max(shapes, axis=0)
 

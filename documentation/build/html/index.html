@@ -1,0 +1,301 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Welcome to plotting_utils’s documentation! &#8212; plotting_utils  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-plotting-utils-s-documentation">
+<h1>Welcome to plotting_utils’s documentation!<a class="headerlink" href="#welcome-to-plotting-utils-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<span class="target" id="module-plotting_utils.main"></span><dl class="function">
+<dt id="plotting_utils.main.ffmpeg">
+<code class="sig-prename descclassname">plotting_utils.main.</code><code class="sig-name descname">ffmpeg</code><span class="sig-paren">(</span><em class="sig-param">command</em>, <em class="sig-param">pixel_format='yuv420p'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotting_utils/main.html#ffmpeg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting_utils.main.ffmpeg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interface to run ffmpeg from python.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>command</strong> (<em>string</em>) – command passed to ffmpeg.</p></li>
+<li><p><strong>pixel_format</strong> (<em>string</em>) – Specifies the pixel format of the output video.
+If <cite>command</cite> includes ‘-pix_fmt’, <a href="#id1"><span class="problematic" id="id2">`</span></a>pixel_format
+is ignored. Default is ‘yuv420p’ which ensures
+videos can be included in presentation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting_utils.main.make_video">
+<code class="sig-prename descclassname">plotting_utils.main.</code><code class="sig-name descname">make_video</code><span class="sig-paren">(</span><em class="sig-param">video_path</em>, <em class="sig-param">frame_generator</em>, <em class="sig-param">fps</em>, <em class="sig-param">output_shape=(-1</em>, <em class="sig-param">2880)</em>, <em class="sig-param">n_frames=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotting_utils/main.html#make_video"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting_utils.main.make_video" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function writes a video to file with all frames that
+the <cite>frame_generator</cite> yields.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>video_path</strong> (<em>string</em>) – Name/path to the output file.</p></li>
+<li><p><strong>frame_generator</strong> (<em>generator</em>) – Generator yielding individual frames.</p></li>
+<li><p><strong>fps</strong> (<em>int</em>) – Frame rate in frames per second.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-plotting_utils.generators"></span><dl class="function">
+<dt id="plotting_utils.generators.beh_trials">
+<code class="sig-prename descclassname">plotting_utils.generators.</code><code class="sig-name descname">beh_trials</code><span class="sig-paren">(</span><em class="sig-param">snippets</em>, <em class="sig-param">synchronization_indices=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotting_utils/generators.html#beh_trials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting_utils.generators.beh_trials" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns a generator that
+yields frames with the given snippets
+of behaviour stacks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>snippets</strong> (<em>list of 3D numpy arrays</em>) – Each array is a snippet for a single
+trial.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>frame_generator</strong> – A generator that yields individual
+video frames.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>generator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting_utils.generators.dff_trials">
+<code class="sig-prename descclassname">plotting_utils.generators.</code><code class="sig-name descname">dff_trials</code><span class="sig-paren">(</span><em class="sig-param">snippets</em>, <em class="sig-param">synchronization_indices=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotting_utils/generators.html#dff_trials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting_utils.generators.dff_trials" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns a generator that
+yields frames with the given snippets
+of dff stacks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>snippets</strong> (<em>list of 3D numpy arrays</em>) – Each array is a snippet for a single
+trial.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>frame_generator</strong> – A generator that yields individual
+video frames.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>generator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting_utils.generators.merge_videos">
+<code class="sig-prename descclassname">plotting_utils.generators.</code><code class="sig-name descname">merge_videos</code><span class="sig-paren">(</span><em class="sig-param">paths</em>, <em class="sig-param">synchronization_indices=None</em>, <em class="sig-param">sort=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotting_utils/generators.html#merge_videos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting_utils.generators.merge_videos" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns a generator that
+yields frames with the given files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paths</strong> (<em>list of strings</em>) – List of the paths to the video files that should be merged.</p></li>
+<li><p><strong>sort</strong> (<em>boolean</em>) – Whether to sort the paths according to natural order.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>frame_generator</strong> – A generator that yields individual
+video frames.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>generator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-plotting_utils.utils"></span><dl class="function">
+<dt id="plotting_utils.utils.grid_size">
+<code class="sig-prename descclassname">plotting_utils.utils.</code><code class="sig-name descname">grid_size</code><span class="sig-paren">(</span><em class="sig-param">n_elements</em>, <em class="sig-param">element_size</em>, <em class="sig-param">ratio=1.3333333333333333</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotting_utils/utils.html#grid_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting_utils.utils.grid_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function computes the number of rows and
+columns to fit elements next to each other
+while trying to be as close to the given ratio
+as possible (default is 4:3).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_elements</strong> (<em>int</em>) – Number of elements to fit.</p></li>
+<li><p><strong>element_size</strong> (<em>tuple of two integers</em>) – Shape of a single element.</p></li>
+<li><p><strong>ratio</strong> (<em>float</em>) – Target ratio. Default is 4:3.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>n_rows</strong> (<em>int</em>) – Number of rows.</p></li>
+<li><p><strong>n_cols</strong> (<em>int</em>) – Number of columns.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting_utils.utils.match_greatest_resolution">
+<code class="sig-prename descclassname">plotting_utils.utils.</code><code class="sig-name descname">match_greatest_resolution</code><span class="sig-paren">(</span><em class="sig-param">shapes</em>, <em class="sig-param">axis</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotting_utils/utils.html#match_greatest_resolution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting_utils.utils.match_greatest_resolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function finds the greatest resolution of
+all the given shapes along the given axis.
+It then converts all the other shapes to match the
+greatest resolution along the given axis, respecting
+the aspect ratio when resizing the other axes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shapes</strong> (<em>list</em><em> or </em><em>tuple of 2-tuples of integers</em>) – List of the shapes of the different images.</p></li>
+<li><p><strong>axis</strong> (<em>int</em>) – The integer specifying the axis</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>shapes</strong> – New resized shapes with all shapes along axis
+being equal to the maximum along this axis.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of 2-tuples of integers</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting_utils.utils.natsorted">
+<code class="sig-prename descclassname">plotting_utils.utils.</code><code class="sig-name descname">natsorted</code><span class="sig-paren">(</span><em class="sig-param">list_of_strs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotting_utils/utils.html#natsorted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting_utils.utils.natsorted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sorts a list of strings in natural order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>list_of_strs</strong> (<em>list of strings</em>) – List to be sorted.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>sorted_l</strong> – Naturally sorted list.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of strings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting_utils.utils.resize_shape">
+<code class="sig-prename descclassname">plotting_utils.utils.</code><code class="sig-name descname">resize_shape</code><span class="sig-paren">(</span><em class="sig-param">shape</em>, <em class="sig-param">original_shape</em>, <em class="sig-param">allow_upsampling=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotting_utils/utils.html#resize_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting_utils.utils.resize_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function converts an image shape into
+a new size respecting the ratio between
+width and hight.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>tuple of two integers</em>) – Desired shape. The tuple and contain one, two
+or no -1 entry. If no entry is -1, this argument
+is returned. If both entries are -1, <cite>original_shape</cite>
+is returned. If only one of the entires is -1, its new
+value in <cite>new_shape</cite> is calculated preserving the ratio
+of <cite>original_shape</cite>.</p></li>
+<li><p><strong>original_shape</strong> (<em>tuple of two integers</em>) – Original shape.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>new_shape</strong> – Resized shape.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple of two integers</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">plotting_utils</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Florian Aymanns.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

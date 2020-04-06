@@ -1,0 +1,337 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>plotting_utils.generators &#8212; plotting_utils  documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for plotting_utils.generators</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">grid_size</span><span class="p">,</span>
+    <span class="n">colorbar</span><span class="p">,</span>
+    <span class="n">add_colorbar</span><span class="p">,</span>
+    <span class="n">load_video</span><span class="p">,</span>
+    <span class="n">natsorted</span><span class="p">,</span>
+    <span class="n">resize_shape</span><span class="p">,</span>
+    <span class="n">match_greatest_resolution</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="dff_trials"><a class="viewcode-back" href="../../index.html#plotting_utils.generators.dff_trials">[docs]</a><span class="k">def</span> <span class="nf">dff_trials</span><span class="p">(</span><span class="n">snippets</span><span class="p">,</span> <span class="n">synchronization_indices</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function returns a generator that</span>
+<span class="sd">    yields frames with the given snippets</span>
+<span class="sd">    of dff stacks.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    snippets : list of 3D numpy arrays</span>
+<span class="sd">        Each array is a snippet for a single</span>
+<span class="sd">        trial.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    frame_generator : generator</span>
+<span class="sd">        A generator that yields individual</span>
+<span class="sd">        video frames.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">_grid_frames</span><span class="p">(</span><span class="n">snippets</span><span class="p">,</span> <span class="n">synchronization_indices</span><span class="p">)</span>
+    <span class="n">vmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">vmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> <span class="mf">99.5</span><span class="p">)</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">)</span>
+    <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">jet</span>
+    <span class="n">cbar</span> <span class="o">=</span> <span class="n">colorbar</span><span class="p">(</span><span class="n">norm</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="p">(</span><span class="n">frames</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="n">frames</span><span class="p">))</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="p">(</span><span class="n">frames</span> <span class="o">*</span> <span class="mi">255</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">add_colorbar</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> <span class="n">cbar</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">frame_generator</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">frame</span>
+
+    <span class="k">return</span> <span class="n">frame_generator</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="beh_trials"><a class="viewcode-back" href="../../index.html#plotting_utils.generators.beh_trials">[docs]</a><span class="k">def</span> <span class="nf">beh_trials</span><span class="p">(</span><span class="n">snippets</span><span class="p">,</span> <span class="n">synchronization_indices</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function returns a generator that</span>
+<span class="sd">    yields frames with the given snippets</span>
+<span class="sd">    of behaviour stacks.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    snippets : list of 3D numpy arrays</span>
+<span class="sd">        Each array is a snippet for a single</span>
+<span class="sd">        trial.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    frame_generator : generator</span>
+<span class="sd">        A generator that yields individual</span>
+<span class="sd">        video frames.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">_grid_frames</span><span class="p">(</span><span class="n">snippets</span><span class="p">,</span> <span class="n">synchronization_indices</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">frame_generator</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">:</span>
+            <span class="n">frame</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">frame</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+            <span class="n">frame</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">255</span>
+            <span class="k">yield</span> <span class="n">frame</span>
+
+    <span class="k">return</span> <span class="n">frame_generator</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="merge_videos"><a class="viewcode-back" href="../../index.html#plotting_utils.generators.merge_videos">[docs]</a><span class="k">def</span> <span class="nf">merge_videos</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="n">synchronization_indices</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function returns a generator that</span>
+<span class="sd">    yields frames with the given files.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    paths : list of strings</span>
+<span class="sd">        List of the paths to the video files that should be merged.</span>
+<span class="sd">    sort : boolean</span>
+<span class="sd">        Whether to sort the paths according to natural order.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    frame_generator : generator</span>
+<span class="sd">        A generator that yields individual</span>
+<span class="sd">        video frames.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sort</span><span class="p">:</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="n">natsorted</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+    <span class="n">snippets</span> <span class="o">=</span> <span class="p">[</span><span class="n">load_video</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">]</span>
+
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">_grid_frames</span><span class="p">(</span><span class="n">snippets</span><span class="p">,</span> <span class="n">synchronization_indices</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">frame_generator</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">frame</span>
+
+    <span class="k">return</span> <span class="n">frame_generator</span><span class="p">()</span></div>
+
+
+<span class="k">def</span> <span class="nf">_grid_frames</span><span class="p">(</span><span class="n">snippets</span><span class="p">,</span> <span class="n">synchronization_indices</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># Check that all snippets have the same frame size.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">snippet</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">snippet</span> <span class="ow">in</span> <span class="n">snippets</span><span class="p">]))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span>
+        <span class="nb">set</span><span class="p">([</span><span class="n">snippet</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">snippet</span> <span class="ow">in</span> <span class="n">snippets</span><span class="p">])</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Snippets do not have the same frame size.&quot;</span><span class="p">)</span>
+
+    <span class="n">n_snippets</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">snippets</span><span class="p">)</span>
+    <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span> <span class="k">for</span> <span class="n">stack</span> <span class="ow">in</span> <span class="n">snippets</span><span class="p">]</span>
+    <span class="n">max_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lengths</span><span class="p">)</span>
+    <span class="n">frame_size</span> <span class="o">=</span> <span class="n">snippets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">snippet</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">4</span> <span class="k">for</span> <span class="n">snippet</span> <span class="ow">in</span> <span class="n">snippets</span><span class="p">]):</span>
+        <span class="n">n_channels</span> <span class="o">=</span> <span class="n">snippets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">frame_size</span> <span class="o">=</span> <span class="n">frame_size</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">snippet</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span> <span class="k">for</span> <span class="n">snippet</span> <span class="ow">in</span> <span class="n">snippets</span><span class="p">]):</span>
+        <span class="n">n_channels</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Snippets don&#39;t have the same number of channels.&quot;</span><span class="p">)</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">snippets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="n">n_rows</span><span class="p">,</span> <span class="n">n_cols</span> <span class="o">=</span> <span class="n">grid_size</span><span class="p">(</span><span class="n">n_snippets</span><span class="p">,</span> <span class="n">frame_size</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">synchronization_indices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">synchronization_indices</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">max_length</span><span class="p">),</span> <span class="kc">None</span><span class="p">,</span> <span class="n">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">length</span> <span class="ow">in</span> <span class="n">lengths</span>
+        <span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">synchronization_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_snippets</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Number of synchronization_indices provided doesn&#39;t match the number of snippets.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">max_length</span><span class="p">,</span> <span class="n">frame_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_rows</span><span class="p">,</span> <span class="n">frame_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_cols</span><span class="p">,</span> <span class="n">n_channels</span><span class="p">),</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">stack</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">snippets</span><span class="p">):</span>
+        <span class="n">row_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">/</span> <span class="n">n_cols</span><span class="p">)</span>
+        <span class="n">col_idx</span> <span class="o">=</span> <span class="n">i</span> <span class="o">%</span> <span class="n">n_cols</span>
+        <span class="n">frames</span><span class="p">[</span>
+            <span class="p">:,</span>
+            <span class="n">row_idx</span> <span class="o">*</span> <span class="n">frame_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">:</span> <span class="p">(</span><span class="n">row_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">frame_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">col_idx</span> <span class="o">*</span> <span class="n">frame_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">:</span> <span class="p">(</span><span class="n">col_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">frame_size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">stack</span><span class="p">[</span><span class="n">synchronization_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">frames</span>
+
+
+<span class="k">def</span> <span class="nf">synchronization_indices</span><span class="p">(</span><span class="n">offsets</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">snippet_lengths</span><span class="p">):</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">offsets</span><span class="p">),</span> <span class="n">length</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">offset</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">offsets</span><span class="p">):</span>
+        <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">offset</span><span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">length</span> <span class="o">-</span> <span class="n">offset</span><span class="p">)</span>
+        <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="n">snippet_lengths</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">indices</span>
+
+
+<span class="k">def</span> <span class="nf">beh_overlay</span><span class="p">(</span><span class="n">snippets</span><span class="p">,</span> <span class="n">synchronization_indices</span><span class="p">):</span>
+    <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span> <span class="k">for</span> <span class="n">stack</span> <span class="ow">in</span> <span class="n">snippets</span><span class="p">]</span>
+    <span class="n">max_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lengths</span><span class="p">)</span>
+    <span class="n">frame_size</span> <span class="o">=</span> <span class="n">snippets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">snippets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">max_length</span><span class="p">,)</span> <span class="o">+</span> <span class="n">frame_size</span><span class="p">)</span>
+    <span class="n">denominator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">max_length</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">snippet</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">snippets</span><span class="p">):</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">synchronization_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">stop</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">synchronization_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">synchronization_indices</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="o">+</span> <span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="c1"># frames[start : stop] += snippet</span>
+        <span class="n">frames</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">stop</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">frames</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">stop</span><span class="p">],</span> <span class="n">snippet</span><span class="p">)</span>
+        <span class="n">denominator</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">stop</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="c1"># frames = frames / denominator[:, np.newaxis, np.newaxis]</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">frames</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">frame_generator</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">frame</span>
+
+    <span class="k">return</span> <span class="n">frame_generator</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">images</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">images</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No files match </span><span class="si">{path}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    <span class="n">images</span> <span class="o">=</span> <span class="n">natsorted</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">image_path</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">add_text</span><span class="p">(</span>
+    <span class="n">generator</span><span class="p">,</span>
+    <span class="n">text</span><span class="p">,</span>
+    <span class="n">pos</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">240</span><span class="p">),</span>
+    <span class="n">font</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">FONT_HERSHEY_SIMPLEX</span><span class="p">,</span>
+    <span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span>
+    <span class="n">line_type</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">img</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">generator</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)):</span>
+            <span class="n">cv2</span><span class="o">.</span><span class="n">putText</span><span class="p">(</span>
+                <span class="n">img</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="mi">40</span><span class="p">),</span> <span class="n">font</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">line_type</span>
+            <span class="p">)</span>
+        <span class="k">yield</span> <span class="n">img</span>
+
+
+<span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="n">generators</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">frame_generator</span><span class="p">():</span>
+        <span class="c1"># Extract shapes of images</span>
+        <span class="n">shapes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">generator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">generators</span><span class="p">):</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">generator</span><span class="p">)</span>
+            <span class="n">shapes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">generators</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">([</span><span class="n">img</span><span class="p">,],</span> <span class="n">generator</span><span class="p">)</span>
+
+        <span class="c1"># Find target shapes</span>
+        <span class="n">shapes</span> <span class="o">=</span> <span class="n">match_greatest_resolution</span><span class="p">(</span><span class="n">shapes</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">imgs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">generators</span><span class="p">):</span>
+            <span class="c1"># Resize images</span>
+            <span class="n">imgs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">imgs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">imgs</span><span class="p">,</span> <span class="n">shapes</span><span class="p">)):</span>
+                <span class="n">imgs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="k">yield</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">imgs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">frame_generator</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">plotting_utils</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Florian Aymanns.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

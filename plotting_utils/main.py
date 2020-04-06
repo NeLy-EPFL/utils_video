@@ -4,7 +4,7 @@ import subprocess
 import cv2
 from tqdm import tqdm
 
-from .utils import *
+from .utils import resize_shape
 
 
 def make_video(video_path, frame_generator, fps, output_shape=(-1, 2880), n_frames=-1):

@@ -33,8 +33,8 @@ def test_resize_shape():
 
 def test_find_greatest_common_resolution():
     shapes = [(3, 4), (2, 6), (6, 4)]
-    assert plotting_utils.utils.find_greatest_common_resolution(shapes, axis=0) == [(6, 8), (6, 18), (6, 4)]
-    assert plotting_utils.utils.find_greatest_common_resolution(shapes, axis=1) == [(4, 6), (2, 6), (9, 6)]
+    assert plotting_utils.utils.match_greatest_resolution(shapes, axis=0) == [(6, 8), (6, 18), (6, 4)]
+    assert plotting_utils.utils.match_greatest_resolution(shapes, axis=1) == [(4, 6), (2, 6), (9, 6)]
 
 
 def test_grid_size():

@@ -24,7 +24,7 @@ def test_stack(tmpdir, homogeneous_generator, size_gen1, size_gen2):
     generator2 = homogeneous_generator(size=size_gen2, vrange=range(1, -1, -1))
     stacked_generator = plotting_utils.generators.stack([generator1, generator2])
 
-    size_gen1, size_gen2 = plotting_utils.utils.find_greatest_common_resolution([size_gen1, size_gen2], axis=1)
+    size_gen1, size_gen2 = plotting_utils.utils.match_greatest_resolution([size_gen1, size_gen2], axis=1)
     
     first_frame = np.zeros((size_gen1[0] + size_gen2[0], size_gen1[1]))
     first_frame[size_gen1[0]:] = 1

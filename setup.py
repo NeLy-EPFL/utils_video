@@ -5,14 +5,14 @@ with open("README.md", "r") as fh:
 
 
 setup(
-    name="plotting_utils",
+    name="utils_video",
     version="0.1",
-    packages=["plotting_utils",],
+    packages=["utils_video",],
     author="Florian Aymanns",
     author_email="florian.ayamnns@epfl.ch",
     description="Basic utility functions for plotting videos with 2p data and behaviour.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/NeLy-EPFL/plotting_utils.git",
+    url="https://github.com/NeLy-EPFL/utils_video.git",
     install_requires=["pytest", "numpy", "matplotlib", "opencv-python", "tqdm"],
 )

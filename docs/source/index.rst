@@ -1,22 +1,22 @@
-.. plotting_utils documentation master file, created by
+.. utils_video documentation master file, created by
    sphinx-quickstart on Sat Apr  4 18:52:02 2020.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to plotting_utils's documentation!
+Welcome to utils_video's documentation!
 ==========================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-.. automodule:: plotting_utils.main
+.. automodule:: utils_video.main
     :members:
 
-.. automodule:: plotting_utils.generators
+.. automodule:: utils_video.generators
     :members:
 
-.. automodule:: plotting_utils.utils
+.. automodule:: utils_video.utils
     :members:
 
 

@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'plotting_utils'
+project = 'utils_video'
 copyright = '2020, Florian Aymanns'
 author = 'Florian Aymanns'
 

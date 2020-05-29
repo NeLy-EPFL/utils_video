@@ -112,3 +112,7 @@ venv.bak/
 
 # documentation build
 documentation/_build
+
+# examples output
+examples/*.npy
+examples/*.mp4

@@ -228,7 +228,7 @@ def stack(generators):
             generators[i] = itertools.chain([img,], generator)
 
         # Find target shapes
-        shapes = find_greatest_common_resolution(shapes, axis=1)
+        shapes = match_greatest_resolution(shapes, axis=1)
 
         for imgs in zip(*generators):
             # Resize images

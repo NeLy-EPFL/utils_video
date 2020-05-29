@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import cv2
 
-import plotting_utils
+import utils_video
 
 @pytest.fixture
 def black_generator():
@@ -24,7 +24,7 @@ def black_generator():
 def test_make_video(black_generator, tmpdir, fps, n_frames, n_channels):
     output_file = os.path.join(tmpdir, "output_vid.mp4")
     generator = black_generator(40, 20, n_frames, n_channels)
-    plotting_utils.make_video(output_file, generator, fps)
+    utils_video.make_video(output_file, generator, fps)
     
     cap = cv2.VideoCapture(output_file)
     assert cap.isOpened()
@@ -51,4 +51,4 @@ def test_make_video(black_generator, tmpdir, fps, n_frames, n_channels):
 
 def test_ffmpeg(tmpdir):
     output = os.path.join(tmpdir, "video.mp4")
-    plotting_utils.ffmpeg(f"-f lavfi -i testsrc=duration=10:size=1280x720:rate=30 {output}")
+    utils_video.ffmpeg(f"-f lavfi -i testsrc=duration=10:size=1280x720:rate=30 {output}")

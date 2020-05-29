@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-import plotting_utils.generators
+import utils_video.generators
 
 @pytest.fixture
 def homogeneous_generator():
@@ -22,9 +22,9 @@ def homogeneous_generator():
 def test_stack(tmpdir, homogeneous_generator, size_gen1, size_gen2):
     generator1 = homogeneous_generator(size=size_gen1, vrange=range(2))
     generator2 = homogeneous_generator(size=size_gen2, vrange=range(1, -1, -1))
-    stacked_generator = plotting_utils.generators.stack([generator1, generator2])
+    stacked_generator = utils_video.generators.stack([generator1, generator2])
 
-    size_gen1, size_gen2 = plotting_utils.utils.find_greatest_common_resolution([size_gen1, size_gen2], axis=1)
+    size_gen1, size_gen2 = utils_video.utils.match_greatest_resolution([size_gen1, size_gen2], axis=1)
     
     first_frame = np.zeros((size_gen1[0] + size_gen2[0], size_gen1[1]))
     first_frame[size_gen1[0]:] = 1

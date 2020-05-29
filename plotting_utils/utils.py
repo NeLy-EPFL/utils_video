@@ -3,7 +3,13 @@ import re
 
 import cv2
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import axes3d, Axes3D
 import numpy as np
+
+import deepfly.plot_util
+
+img3d_dpi = 100
+img3d_aspect = (2, 2)
 
 
 def resize_shape(shape, original_shape, allow_upsampling=False):
@@ -197,3 +203,23 @@ def natsorted(list_of_strs):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
     return sorted(list_of_strs, key=alphanum_key)
+
+def plot_df3d_pose(points3d):
+    plt.style.use("dark_background")
+    fig = plt.figure(figsize=img3d_aspect, dpi=img3d_dpi)
+    fig.tight_layout(pad=0)
+    ax3d = Axes3D(fig)
+    ax3d.set_xticklabels([])
+    ax3d.set_yticklabels([])
+    ax3d.set_zticklabels([])
+    ax3d.set_xticks([])
+    ax3d.set_yticks([])
+    ax3d.set_zticks([])
+
+    deepfly.plot_util.plot_drosophila_3d(ax3d, points3d.copy(), cam_id=2, lim=2)
+
+    fig.canvas.draw()
+    data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    plt.close()
+    return data

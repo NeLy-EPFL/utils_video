@@ -13,6 +13,7 @@ from .utils import (
     natsorted,
     resize_shape,
     find_greatest_common_resolution,
+    plot_df3d_pose,
 )
 
 
@@ -238,3 +239,11 @@ def stack(generators):
             yield np.concatenate(imgs, axis=0)
 
     return frame_generator()
+
+def df3d_3d_points(points3d):
+    def generator():
+        for pose in points3d:
+            img = plot_df3d_pose(pose)
+            yield img
+
+    return generator()

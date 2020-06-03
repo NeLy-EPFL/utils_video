@@ -166,7 +166,7 @@ def colorbar(norm, cmap, size, orientation="vertical"):
         data = data[750:900, :]
     else:
         data = data[:, 750:]
-    size = resize_shape(size, data.shape)
+    size = resize_shape(size, data.shape[:-1])
     data = cv2.resize(data, size[::-1])
     return data
 
@@ -185,13 +185,14 @@ def add_colorbar(frames, cbar, pos, alpha=255):
         cbar = np.concatenate((cbar, extra_channel), axis=-1)
     cbar = np.tile(cbar, (frames.shape[0], 1, 1, 1))
     if pos == "right":
-        return np.concatenate((frames, cbar), axis=2)
+        with_color_bar = np.concatenate((frames, cbar), axis=2)
     elif pos == "left":
-        return np.concatenate((cbar, frames), axis=2)
+        with_color_bar = np.concatenate((cbar, frames), axis=2)
     elif pos == "bottom":
-        return np.concatenate((frames, cbar), axis=1)
+        with_color_bar = np.concatenate((frames, cbar), axis=1)
     elif pos == "top":
-        return np.concatenate((cbar, frames), axis=1)
+        with_color_bar = np.concatenate((cbar, frames), axis=1)
+    return np.squeeze(with_color_bar)
 
 def load_video(path):
     cap = cv2.VideoCapture(path)
@@ -320,6 +321,7 @@ def ridge_line_plot(
     t,
     colormap=plt.get_cmap("autumn"),
     ylim="max",
+    xlim="fit",
     vline=False,
     overlap=1,
     figsize=(6, 10),
@@ -360,6 +362,8 @@ def ridge_line_plot(
 
     if ylim == "max":
         ylim = (min(signals), max(signals))
+    if xlim == "fit":
+        xlim = (np.min(t), np.max(t))
     num_axes = signals.shape[0]
     clip_on = True
     with plt.rc_context(
@@ -388,7 +392,7 @@ def ridge_line_plot(
             a.plot(t, [0.0] * len(t), clip_on=clip_on, color=colormap(i / num_axes))
             a.plot(t, signals[i], clip_on=clip_on, color="k")
             a.set_ylim(ylim)
-            a.set_xlim((t[0], t[-1]))
+            a.set_xlim(xlim)
             if not i % 10:
                 a.set_yticks([0])
                 a.set_yticklabels([str(i)])
@@ -409,7 +413,7 @@ def ridge_line_plot(
         fig_ridge.tight_layout(h_pad=h_pad)
 
         if vline is not None:
-            for i in range(0, len(axes), 10):
+            for i in range(0, len(axes), 1):
                 _axes[i].axvline(
                     vline, linestyle="-", color="white", linewidth=1.5, clip_on=False
                 )

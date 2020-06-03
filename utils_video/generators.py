@@ -17,6 +17,22 @@ from .utils import (
     ridge_line_plot,
 )
 
+def dff(stack):
+    vmin = np.percentile(stack, 0.5)
+    vmax = np.percentile(stack, 99.5)
+    norm = plt.Normalize(vmin, vmax)
+    cmap = plt.cm.jet
+    cbar = colorbar(norm, cmap, (stack.shape[1], -1))
+
+    def frame_generator():
+        for frame in stack:
+            frame = cmap(norm(frame))
+            frame = (frame * 255).astype(np.uint8)
+            frame = add_colorbar(frame, cbar, "right")
+            yield frame
+
+    return frame_generator()
+
 
 def dff_trials(snippets, synchronization_indices=None):
     """
@@ -37,20 +53,7 @@ def dff_trials(snippets, synchronization_indices=None):
         video frames.
     """
     frames = _grid_frames(snippets, synchronization_indices)
-    vmin = np.percentile(frames, 0.5)
-    vmax = np.percentile(frames, 99.5)
-    norm = plt.Normalize(vmin, vmax)
-    cmap = plt.cm.jet
-    cbar = colorbar(norm, cmap, (frames.shape[1], -1))
-    frames = cmap(norm(frames))
-    frames = (frames * 255).astype(np.uint8)
-    frames = add_colorbar(frames, cbar, "right")
-
-    def frame_generator():
-        for frame in frames:
-            yield frame
-
-    return frame_generator()
+    return dff(frames)
 
 
 def beh_trials(snippets, synchronization_indices=None):
@@ -199,7 +202,9 @@ def images(path):
         raise FileNotFoundError(f"No files match {path}.")
     images = natsorted(images)
     for image_path in images:
-        yield cv2.imread(image_path)
+        img = cv2.imread(image_path)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
+        yield img
 
 
 def add_text(
@@ -219,7 +224,7 @@ def add_text(
         yield img
 
 
-def stack(generators):
+def stack(generators, axis=0):
     def frame_generator():
         # Extract shapes of images
         shapes = []
@@ -229,15 +234,17 @@ def stack(generators):
             generators[i] = itertools.chain([img,], generator)
 
         # Find target shapes
-        shapes = match_greatest_resolution(shapes, axis=1)
+        shapes = match_greatest_resolution(shapes, axis=(axis + 1) % 2)
 
         for imgs in zip(*generators):
             # Resize images
             imgs = list(imgs)
             for i, (img, shape) in enumerate(zip(imgs, shapes)):
+                if img.shape[2] == 3:
+                    img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
                 imgs[i] = cv2.resize(img, shape[::-1])
 
-            yield np.concatenate(imgs, axis=0)
+            yield np.concatenate(imgs, axis=axis)
 
     return frame_generator()
 
@@ -255,16 +262,14 @@ def ridge_line(dff_traces, frame_times_2p, frame_times_beh, dt):
     def frame_generator():
         for t in frame_times_beh:
             indices = np.where((frame_times_2p > t - dt) & (frame_times_2p < t + dt))[0]
-            start = indices[0]
-            stop = indices[-1]
+            start = max(indices[0] - 1, 0)
+            stop = min(indices[-1] + 1, dff_traces.shape[1])
             signals = dff_traces[:, start : stop]
             times = frame_times_2p[start : stop]
             
-            pre_post_signal = np.zeros((signals.shape[0], 2))
-            signals = np.concatenate((pre_post_signal, signals, pre_post_signal), axis=1)
-            times = np.concatenate(([t - dt, times[0]], times, [times[-1], t + dt]))
+            xlim = (t - dt, t + dt)
 
-            frame = ridge_line_plot(signals, times, vline=t, ylim=ylim)
+            frame = ridge_line_plot(signals, times, vline=t, ylim=ylim, xlim=xlim)
             yield frame
 
     return frame_generator()
@@ -276,3 +281,22 @@ def static_image(image, n_frames):
             yield image
 
     return frame_generator()
+
+
+def resample(generator, indices):
+    def resampled_generator():
+        current_frame_index = 0
+        frame = next(generator)
+        for i in indices:
+            while i > current_frame_index:
+                frame = next(generator)
+                current_frame_index += 1
+            yield frame
+    return resampled_generator()
+
+def pad(generator, top, botom, left, right):
+    def padded_generator():
+        for img in generator:
+            padded_image = np.pad(img, ((top, botom), (left, right), (0, 0)), "constant", constant_values=0)
+            yield padded_image
+    return padded_generator()

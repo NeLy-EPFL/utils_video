@@ -12,8 +12,9 @@ from .utils import (
     load_video,
     natsorted,
     resize_shape,
-    find_greatest_common_resolution,
+    match_greatest_resolution,
     plot_df3d_pose,
+    ridge_line_plot,
 )
 
 
@@ -247,3 +248,31 @@ def df3d_3d_points(points3d):
             yield img
 
     return generator()
+
+
+def ridge_line(dff_traces, frame_times_2p, frame_times_beh, dt):
+    ylim = (np.nanmin(dff_traces), np.nanmax(dff_traces))
+    def frame_generator():
+        for t in frame_times_beh:
+            indices = np.where((frame_times_2p > t - dt) & (frame_times_2p < t + dt))[0]
+            start = indices[0]
+            stop = indices[-1]
+            signals = dff_traces[:, start : stop]
+            times = frame_times_2p[start : stop]
+            
+            pre_post_signal = np.zeros((signals.shape[0], 2))
+            signals = np.concatenate((pre_post_signal, signals, pre_post_signal), axis=1)
+            times = np.concatenate(([t - dt, times[0]], times, [times[-1], t + dt]))
+
+            frame = ridge_line_plot(signals, times, vline=t, ylim=ylim)
+            yield frame
+
+    return frame_generator()
+
+
+def static_image(image, n_frames):
+    def frame_generator():
+        for i in range(n_frames):
+            yield image
+
+    return frame_generator()

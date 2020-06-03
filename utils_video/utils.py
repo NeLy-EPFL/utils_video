@@ -5,6 +5,7 @@ import cv2
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 import numpy as np
+from pandas.plotting._tools import _subplots, _flatten
 
 import deepfly.plot_util
 
@@ -241,5 +242,179 @@ def plot_df3d_pose(points3d):
     fig.canvas.draw()
     data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
     data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    plt.close()
+    return data
+
+
+def roi_image(background, mask, connectivity=4, min_size=0, cm="autumn"):
+    """
+    This function overlays the ROIs in the mask on the background
+    and gives each ROI a different color.
+
+    Parameters
+    ----------
+    background : numpy array 2D
+        Background image.
+    mask : numpy array 2D
+        ROI mask.
+    connectivity : int
+        Connectivity of connected components. Can be 4 or 8.
+    min_size : int
+        Minimum size of a connected component to be considered a ROI.
+    cm : string
+        Name of the matplotlib color map used.
+    
+    Returns
+    -------
+    img : numpy array 3D
+        Output image.
+    colors : numpy array 2D
+        Colors in the order of the ROIs.
+    """
+    # Make sure mask has only one channel
+    if mask.ndim == 3:
+        mask = np.sum(mask, axis=-1)
+
+    # Make sure background only has one channel
+    if background.ndim == 3:
+        background = np.sum(background, axis=-1)
+
+    # Check that background and mask are image of the same size
+    if background.shape != mask.shape:
+        raise ValueError("Dimensions of the image given for background and mask do not match.")
+
+    background = background / np.max(background) * 255
+    img = np.zeros(background.shape + (3,))
+    img[:, :, 0] = background
+    img[:, :, 1] = background
+    img[:, :, 2] = background
+
+    # Ensure mask is uint8 for cv2's connected components
+    mask = mask.astype(np.uint8)
+
+    _, label_img, stats, _ = cv2.connectedComponentsWithStats(
+        mask, connectivity=connectivity
+    )
+    selected_components, = np.where(np.array(stats)[:, 4] > min_size)
+    n_rois = len(selected_components)
+    cm = plt.get_cmap(cm)
+    colors = [cm(1.0 * i / n_rois) for i in range(n_rois)]
+    for roi_num, label in enumerate(selected_components):
+        if label == 0:
+            continue
+        mask_one_roi = np.where(label_img == label)
+        img[mask_one_roi + (np.ones(len(mask_one_roi[0]), dtype=np.int) * 0,)] = (
+            colors[roi_num][0] * 255
+        )
+        img[mask_one_roi + (np.ones(len(mask_one_roi[0]), dtype=np.int) * 1,)] = (
+            colors[roi_num][1] * 255
+        )
+        img[mask_one_roi + (np.ones(len(mask_one_roi[0]), dtype=np.int) * 2,)] = (
+            colors[roi_num][2] * 255
+        )
+    return img.astype(np.uint8), colors
+
+
+def ridge_line_plot(
+    signals,
+    t,
+    colormap=plt.get_cmap("autumn"),
+    ylim="max",
+    vline=False,
+    overlap=1,
+    figsize=(6, 10),
+):
+    """
+    This function creates a ridge line plot of all signals.
+    Parts of the code are from the joypy module.
+
+    Parameters
+    ----------
+    signals : 2D numpy array
+        First dimension: neuron id
+        Second dimension: time
+    t : numpy array
+        Times.
+    color_map : matplotlib colormap
+        Colormap used to color the separate lines.
+    ylim : string or tuple of float
+        The y limits of the shared y axes.
+        If ylim is 'max', the y limits are set to the maximum and minimum
+        of all signals.
+        Default is 'max'.
+    tick_spacing : float
+        Distance between two ticks on the x axis.
+        Default is 0.5.
+    vline : float
+        Plot a vertical line to mark the given value.
+    overlap : float
+        Amount of overlap between figures.
+    figsize : tuple
+        See matplot lib documentation for details.
+
+    Returns
+    -------
+    fig : pyplot figure
+        Figure with the ridge_line_plot.
+    """
+
+    if ylim == "max":
+        ylim = (min(signals), max(signals))
+    num_axes = signals.shape[0]
+    clip_on = True
+    with plt.rc_context(
+        {
+            "axes.edgecolor": "white",
+            "xtick.color": "white",
+            "ytick.color": "white",
+            "figure.facecolor": "black",
+            "font.size": 16,
+        }
+    ):
+        fig_ridge, axes = _subplots(
+            naxes=num_axes,
+            squeeze=False,
+            sharex=True,
+            sharey=False,
+            figsize=figsize,
+            layout_type="vertical",
+        )
+        _axes = _flatten(axes)
+        for i in range(num_axes):
+            a = _axes[i]
+            a.fill_between(
+                t, 0.0, signals[i], clip_on=clip_on, color=colormap(i / num_axes)
+            )
+            a.plot(t, [0.0] * len(t), clip_on=clip_on, color=colormap(i / num_axes))
+            a.plot(t, signals[i], clip_on=clip_on, color="k")
+            a.set_ylim(ylim)
+            a.set_xlim((t[0], t[-1]))
+            if not i % 10:
+                a.set_yticks([0])
+                a.set_yticklabels([str(i)])
+            else:
+                a.set_yticks([])
+            a.patch.set_alpha(0)
+            a.tick_params(axis="both", which="both", length=0, pad=10)
+            a.xaxis.set_visible(False)
+            a.set_frame_on(False)
+
+        _axes[-1].xaxis.set_visible(True)
+        _axes[-1].tick_params(axis="x", which="both", length=5, pad=10)
+
+        _axes[-1].set_xlabel("time [s]", color="white")
+        _axes[int(num_axes / 2)].set_ylabel("Neuron", color="white")
+
+        h_pad = 5 + (-5 * (1 + overlap))
+        fig_ridge.tight_layout(h_pad=h_pad)
+
+        if vline is not None:
+            for i in range(0, len(axes), 10):
+                _axes[i].axvline(
+                    vline, linestyle="-", color="white", linewidth=1.5, clip_on=False
+                )
+    fig_ridge.canvas.draw()
+    data = np.frombuffer(fig_ridge.canvas.tostring_rgb(), dtype=np.uint8)
+    data = data.reshape(fig_ridge.canvas.get_width_height()[::-1] + (3,))
     plt.close()
     return data

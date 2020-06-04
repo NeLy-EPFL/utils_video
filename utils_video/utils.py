@@ -165,7 +165,7 @@ def colorbar(norm, cmap, size, orientation="vertical"):
     if orientation == "horizontal":
         data = data[750:900, :]
     else:
-        data = data[:, 750:]
+        data = data[:, 750:900]
     size = resize_shape(size, data.shape[:-1])
     data = cv2.resize(data, size[::-1])
     return data
@@ -407,7 +407,7 @@ def ridge_line_plot(
         _axes[-1].tick_params(axis="x", which="both", length=5, pad=10)
 
         _axes[-1].set_xlabel("time [s]", color="white")
-        _axes[int(num_axes / 2)].set_ylabel("Neuron", color="white")
+        _axes[int(num_axes / 2)].set_ylabel("Neuron", color="white", labelpad=50)
 
         h_pad = 5 + (-5 * (1 + overlap))
         fig_ridge.tight_layout(h_pad=h_pad)
@@ -421,4 +421,53 @@ def ridge_line_plot(
     data = np.frombuffer(fig_ridge.canvas.tostring_rgb(), dtype=np.uint8)
     data = data.reshape(fig_ridge.canvas.get_width_height()[::-1] + (3,))
     plt.close()
+    return data
+
+def dynamics_3D_plot(points, minimums, maximums, fig_size=(6, 3)):
+    with plt.rc_context(
+        {
+            "axes.edgecolor": "white",
+            "xtick.color": "white",
+            "ytick.color": "white",
+            "figure.facecolor": "black",
+            "font.size": 16,
+        }
+    ):
+
+        fig = plt.figure(figsize=fig_size)
+        ax = fig.add_subplot(111, projection='3d', facecolor="black")
+        # Some times warns because of zero divide (seems to be related with plotting several points at once if
+        # all points are plotted with separate calls of ax.scatter no warning is raised.
+        # ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=np.arange(points.shape[0]))
+        ax.scatter(
+            minimums[0], points[-1, 1], points[-1, 2], c="k"
+        )
+        ax.scatter(
+            points[-1, 0], maximums[1], points[-1, 2], c="k"
+        )
+        ax.scatter(
+            points[-1, 0], points[-1, 1], minimums[2], c="k"
+        )
+        ax.plot(points[:, 0], points[:, 1], points[:, 2])
+        ax.scatter(
+            points[:-1, 0],
+            points[:-1, 1],
+            points[:-1, 2],
+            c=np.arange(points.shape[0] - 1),
+            s=1,
+        )
+        ax.scatter(
+            points[-1, 0], points[-1, 1], points[-1, 2], c="r"
+        )
+        ax.set_xlim3d(minimums[0], maximums[0])
+        ax.set_ylim3d(minimums[1], maximums[1])
+        ax.set_zlim3d(minimums[2], maximums[2])
+        ax.set_xlabel("PC 1", color="white", labelpad=15)
+        ax.set_ylabel("PC 2", color="white", labelpad=15)
+        ax.set_zlabel("PC 3", color="white", rotation=90, labelpad=15)
+
+        fig.canvas.draw()
+        data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        plt.close()
     return data

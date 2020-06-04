@@ -15,6 +15,7 @@ from .utils import (
     match_greatest_resolution,
     plot_df3d_pose,
     ridge_line_plot,
+    dynamics_3D_plot,
 )
 
 def dff(stack):
@@ -300,3 +301,12 @@ def pad(generator, top, botom, left, right):
             padded_image = np.pad(img, ((top, botom), (left, right), (0, 0)), "constant", constant_values=0)
             yield padded_image
     return padded_generator()
+
+def dynamics_3D(points, n, fig_size=(6, 3)):
+    minimums = np.min(points, axis=0)
+    maximums = np.max(points, axis=0)
+    def generator():
+        for i in range(points.shape[0]):
+            image = dynamics_3D_plot(points[max(0, i - n) : i + 1], minimums=minimums, maximums=maximums, fig_size=fig_size)
+            yield image
+    return generator()

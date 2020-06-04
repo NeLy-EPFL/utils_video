@@ -1,5 +1,6 @@
 import glob
 import itertools
+import math
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -18,17 +19,28 @@ from .utils import (
     dynamics_3D_plot,
 )
 
-def dff(stack):
+def dff(stack, size=None, font_size=16):
     vmin = np.percentile(stack, 0.5)
     vmax = np.percentile(stack, 99.5)
     norm = plt.Normalize(vmin, vmax)
     cmap = plt.cm.jet
-    cbar = colorbar(norm, cmap, (stack.shape[1], -1))
+
+    if size is None:
+        image_shape = stack.shape[1:3]
+        cbar_shape = (stack.shape[1], max(math.ceil(stack.shape[2] * 0.1), 150))
+    else: 
+        cbar_width = max(math.ceil(size[1] * 0.1), 150)
+        image_shape = (size[0], size[1] - cbar_width)
+        image_shape = resize_shape(image_shape, stack.shape[1:3])
+        cbar_shape = (image_shape[0], cbar_width)
+    
+    cbar = colorbar(norm, cmap, cbar_shape, font_size=font_size)
 
     def frame_generator():
         for frame in stack:
             frame = cmap(norm(frame))
             frame = (frame * 255).astype(np.uint8)
+            frame = cv2.resize(frame, image_shape[::-1])
             frame = add_colorbar(frame, cbar, "right")
             yield frame
 
@@ -197,13 +209,16 @@ def beh_overlay(snippets, synchronization_indices):
     return frame_generator()
 
 
-def images(path):
+def images(path, size=None):
     images = glob.glob(path)
     if len(images) == 0:
         raise FileNotFoundError(f"No files match {path}.")
     images = natsorted(images)
     for image_path in images:
         img = cv2.imread(image_path)
+        if size is not None:
+            shape = resize_shape(size, img.shape[:2])
+            img = cv2.resize(img, shape[::-1])
         img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
         yield img
 
@@ -258,7 +273,7 @@ def df3d_3d_points(points3d):
     return generator()
 
 
-def ridge_line(dff_traces, frame_times_2p, frame_times_beh, dt):
+def ridge_line(dff_traces, frame_times_2p, frame_times_beh, dt, size=(432, 720), font_size=16):
     ylim = (np.nanmin(dff_traces), np.nanmax(dff_traces))
     def frame_generator():
         for t in frame_times_beh:
@@ -270,13 +285,16 @@ def ridge_line(dff_traces, frame_times_2p, frame_times_beh, dt):
             
             xlim = (t - dt, t + dt)
 
-            frame = ridge_line_plot(signals, times, vline=t, ylim=ylim, xlim=xlim)
+            frame = ridge_line_plot(signals, times, vline=t, ylim=ylim, xlim=xlim, size=size, font_size=font_size)
             yield frame
 
     return frame_generator()
 
 
-def static_image(image, n_frames):
+def static_image(image, n_frames, size=None):
+    if size is not None:
+        shape = resize_shape(size, image.shape[:2])
+        image = cv2.resize(image, shape[::-1])
     def frame_generator():
         for i in range(n_frames):
             yield image
@@ -302,11 +320,11 @@ def pad(generator, top, botom, left, right):
             yield padded_image
     return padded_generator()
 
-def dynamics_3D(points, n, fig_size=(6, 3)):
+def dynamics_3D(points, n, size=(432, 216), font_size=16):
     minimums = np.min(points, axis=0)
     maximums = np.max(points, axis=0)
     def generator():
         for i in range(points.shape[0]):
-            image = dynamics_3D_plot(points[max(0, i - n) : i + 1], minimums=minimums, maximums=maximums, fig_size=fig_size)
+            image = dynamics_3D_plot(points[max(0, i - n) : i + 1], minimums=minimums, maximums=maximums, size=size, font_size=font_size)
             yield image
     return generator()

@@ -1,5 +1,6 @@
 import math
 import re
+import itertools
 
 import cv2
 from matplotlib import pyplot as plt
@@ -9,8 +10,14 @@ from pandas.plotting._tools import _subplots, _flatten
 
 import deepfly.plot_util
 
-img3d_dpi = 100
+dpi = 100
 img3d_aspect = (2, 2)
+
+def get_generator_shape(generator):
+    img = next(generator)
+    shape = img.shape
+    generator = itertools.chain([img,], generator)
+    return shape, generator
 
 
 def resize_shape(shape, original_shape, allow_upsampling=False):
@@ -143,31 +150,23 @@ def fig_to_array(fig):
     return data
 
 
-def colorbar(norm, cmap, size, orientation="vertical"):
-    if orientation == "horizontal":
-        figsize = (math.ceil(size[1] / 100), 10)
-    elif orientation == "vertical":
-        figsize = (10, math.ceil(size[0] / 100))
-    else:
+def colorbar(norm, cmap, size, orientation="vertical", font_size=16):
+    if orientation not in ["horizontal", "vertical"]:
         raise ValueError("""orientation can only be "horizontal" or "vertical".""")
 
-    with plt.rc_context({"axes.edgecolor": "white", "xtick.color": "white", "ytick.color": "white", "figure.facecolor": "black", "font.size": 18,}):
-        fig, ax = plt.subplots(figsize=figsize)
+    figsize = (size[1] / dpi, size[0] / dpi)
+
+    with plt.rc_context({"axes.edgecolor": "white", "xtick.color": "white", "ytick.color": "white", "figure.facecolor": "black", "font.size": font_size,}):
+        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         plt.imshow(np.random.rand(100).reshape((10, 10)))
-        color_bar = fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, orientation=orientation)
+        color_bar = fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, orientation=orientation, fraction=1)
         if orientation == "horizontal":
             color_bar.ax.set_xlabel(r"%$\frac{\Delta F}{F}$", rotation=0, color="white")
         else:
-            color_bar.ax.set_ylabel(r"%$\frac{\Delta F}{F}$", rotation=0, color="white")
+            color_bar.ax.set_ylabel(r"%$\frac{\Delta F}{F}$", rotation=0, color="white", labelpad=15)
         ax.remove()
         data = fig_to_array(fig)
         plt.close()
-    if orientation == "horizontal":
-        data = data[750:900, :]
-    else:
-        data = data[:, 750:900]
-    size = resize_shape(size, data.shape[:-1])
-    data = cv2.resize(data, size[::-1])
     return data
 
 def add_colorbar(frames, cbar, pos, alpha=255):
@@ -228,7 +227,7 @@ def natsorted(list_of_strs):
 
 def plot_df3d_pose(points3d):
     plt.style.use("dark_background")
-    fig = plt.figure(figsize=img3d_aspect, dpi=img3d_dpi)
+    fig = plt.figure(figsize=img3d_aspect, dpi=dpi)
     fig.tight_layout(pad=0)
     ax3d = Axes3D(fig)
     ax3d.set_xticklabels([])
@@ -240,9 +239,7 @@ def plot_df3d_pose(points3d):
 
     deepfly.plot_util.plot_drosophila_3d(ax3d, points3d.copy(), cam_id=2, lim=2)
 
-    fig.canvas.draw()
-    data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    data = fig_to_array(fig)
     plt.close()
     return data
 
@@ -324,7 +321,8 @@ def ridge_line_plot(
     xlim="fit",
     vline=False,
     overlap=1,
-    figsize=(6, 10),
+    size=(720, 432),
+    font_size=16,
 ):
     """
     This function creates a ridge line plot of all signals.
@@ -372,7 +370,7 @@ def ridge_line_plot(
             "xtick.color": "white",
             "ytick.color": "white",
             "figure.facecolor": "black",
-            "font.size": 16,
+            "font.size": font_size,
         }
     ):
         fig_ridge, axes = _subplots(
@@ -380,7 +378,8 @@ def ridge_line_plot(
             squeeze=False,
             sharex=True,
             sharey=False,
-            figsize=figsize,
+            figsize=(size[1] / dpi, size[0] / dpi),
+            dpi=dpi,
             layout_type="vertical",
         )
         _axes = _flatten(axes)
@@ -406,8 +405,8 @@ def ridge_line_plot(
         _axes[-1].xaxis.set_visible(True)
         _axes[-1].tick_params(axis="x", which="both", length=5, pad=10)
 
-        _axes[-1].set_xlabel("time [s]", color="white")
-        _axes[int(num_axes / 2)].set_ylabel("Neuron", color="white", labelpad=50)
+        _axes[-1].set_xlabel("Time (s)", color="white")
+        _axes[int(num_axes / 2)].set_ylabel("Neuron", color="white", labelpad=40)
 
         h_pad = 5 + (-5 * (1 + overlap))
         fig_ridge.tight_layout(h_pad=h_pad)
@@ -417,24 +416,22 @@ def ridge_line_plot(
                 _axes[i].axvline(
                     vline, linestyle="-", color="white", linewidth=1.5, clip_on=False
                 )
-    fig_ridge.canvas.draw()
-    data = np.frombuffer(fig_ridge.canvas.tostring_rgb(), dtype=np.uint8)
-    data = data.reshape(fig_ridge.canvas.get_width_height()[::-1] + (3,))
+    data = fig_to_array(fig_ridge)
     plt.close()
     return data
 
-def dynamics_3D_plot(points, minimums, maximums, fig_size=(6, 3)):
+def dynamics_3D_plot(points, minimums, maximums, size=(432, 720), font_size=16):
     with plt.rc_context(
         {
             "axes.edgecolor": "white",
             "xtick.color": "white",
             "ytick.color": "white",
             "figure.facecolor": "black",
-            "font.size": 16,
+            "font.size": font_size,
         }
     ):
 
-        fig = plt.figure(figsize=fig_size)
+        fig = plt.figure(figsize=(size[1] / dpi, size[0] / dpi), dpi=dpi)
         ax = fig.add_subplot(111, projection='3d', facecolor="black")
         # Some times warns because of zero divide (seems to be related with plotting several points at once if
         # all points are plotted with separate calls of ax.scatter no warning is raised.
@@ -466,8 +463,6 @@ def dynamics_3D_plot(points, minimums, maximums, fig_size=(6, 3)):
         ax.set_ylabel("PC 2", color="white", labelpad=15)
         ax.set_zlabel("PC 3", color="white", rotation=90, labelpad=15)
 
-        fig.canvas.draw()
-        data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        data = fig_to_array(fig)
         plt.close()
     return data

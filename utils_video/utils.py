@@ -403,7 +403,7 @@ def ridge_line_plot(
             a.set_frame_on(False)
 
         _axes[-1].xaxis.set_visible(True)
-        _axes[-1].tick_params(axis="x", which="both", length=5, pad=10)
+        _axes[-1].tick_params(axis="x", which="both", length=5, pad=10, labelrotation=45)
 
         _axes[-1].set_xlabel("Time (s)", color="white")
         _axes[int(num_axes / 2)].set_ylabel("Neuron", color="white", labelpad=40)

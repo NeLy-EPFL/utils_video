@@ -209,11 +209,12 @@ def beh_overlay(snippets, synchronization_indices):
     return frame_generator()
 
 
-def images(path, size=None):
+def images(path, size=None, start=0):
     images = glob.glob(path)
     if len(images) == 0:
         raise FileNotFoundError(f"No files match {path}.")
     images = natsorted(images)
+    images = images[start:]
     for image_path in images:
         img = cv2.imread(image_path)
         if size is not None:

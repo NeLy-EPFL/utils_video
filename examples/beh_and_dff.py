@@ -20,12 +20,12 @@ frame_times_beh = utils2p.synchronization.get_start_times(processed_lines["Camer
 beh_generator = utils_video.generators.images("/mnt/data/FA/191129_ABO/Fly2/001_coronal/behData/images/camera_1_img_*.jpg")
 
 # Add time stamp
-text = [f"{t:.1f} s" for t in frame_times_beh[:10]]
+text = [f"{t:.1f} s" for t in frame_times_beh]
 beh_generator = utils_video.generators.add_text(beh_generator, text, scale=3, pos=(680, 100))
 
 dff_stack = utils2p.load_img("/mnt/data/FA/191129_ABO/Fly2/001_coronal/2p/dff.tif")
 dff_generator = utils_video.generators.dff(dff_stack)
-indices = utils2p.synchronization.beh_idx_to_2p_idx(np.arange(10), processed_lines["Cameras"], processed_lines["Frame Counter"])
+indices = utils2p.synchronization.beh_idx_to_2p_idx(np.arange(len(frame_times_beh)), processed_lines["Cameras"], processed_lines["Frame Counter"])
 dff_generator = utils_video.generators.resample(dff_generator, indices)
 
 #generator = beh_generator

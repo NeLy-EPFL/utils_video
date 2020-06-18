@@ -17,6 +17,8 @@ from .utils import (
     plot_df3d_pose,
     ridge_line_plot,
     dynamics_3D_plot,
+    rgb,
+    process_2p_rgb,
 )
 
 def dff(stack, size=None, font_size=16):
@@ -224,6 +226,28 @@ def images(path, size=None, start=0):
         yield img
 
 
+def video(path, size=None, start=0):
+    try:
+        cap = cv2.VideoCapture(path)
+
+        if (cap.isOpened() == False):
+            raise RuntimeError(f"Error opening video stream or file at {path}.")
+
+        current_frame = 0
+        while(cap.isOpened()):
+            ret, frame = cap.read()
+            if ret == True and current_frame >= start:
+                if size is not None:
+                    shape = resize_shape(size, frame.shape[:2])
+                    frame = cv2.resize(frame, shape[::-1])
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
+                yield frame
+            elif ret == False:
+                break
+    finally:
+        cap.release()
+
+
 def add_text(
     generator,
     text,
@@ -329,3 +353,26 @@ def dynamics_3D(points, n, size=(432, 216), font_size=16):
             image = dynamics_3D_plot(points[max(0, i - n) : i + 1], minimums=minimums, maximums=maximums, size=size, font_size=font_size)
             yield image
     return generator()
+
+def frames_2p(red_stack, green_stack, percentiles=(5, 95)):
+    channels = []
+    v_max = []
+    v_min = []
+    if red_stack is not None:
+        channels.append("r")
+        v_max.append(np.percentile(red_stack, percentiles[1]))
+        v_min.append(np.percentile(red_stack, percentiles[0]))
+    if green_stack is not None:
+        channels.append("g")
+        v_max.append(np.percentile(green_stack, percentiles[1]))
+        v_min.append(np.percentile(green_stack, percentiles[0]))
+        channels.append("b")
+        v_max.append(v_max[-1])
+        v_min.append(v_min[-1])
+
+    
+    for red_frame, green_frame in zip(red_stack, green_stack):
+        frame = rgb(red_frame, green_frame, green_frame, None)
+        frame = process_2p_rgb(frame, channels, v_max, v_min)
+        frame = frame.astype(np.uint8)
+        yield frame

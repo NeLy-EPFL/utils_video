@@ -466,3 +466,61 @@ def dynamics_3D_plot(points, minimums, maximums, size=(432, 720), font_size=16):
         data = fig_to_array(fig)
         plt.close()
     return data
+
+def process_2p_rgb(img, channel, v_max, v_min):
+    if isinstance(channel, str):
+        channel = (channel,)
+        v_max = (v_max,)
+        v_min = (v_min,)
+    else:
+        assert len(channel) == len(v_max)
+        assert len(channel) == len(v_min)
+    for i, c in enumerate(channel):
+        if c == "r":
+            img[:, :, 0] = (
+                (np.clip(img[:, :, 0], v_min[i], v_max[i]) - v_min[i])
+                / (v_max[i] - v_min[i])
+                * 255
+            )
+        if c == "g":
+            img[:, :, 1] = (
+                (np.clip(img[:, :, 1], v_min[i], v_max[i]) - v_min[i])
+                / (v_max[i] - v_min[i])
+                * 255
+            )
+        elif c == "b":
+            img[:, :, 2] = (
+                (np.clip(img[:, :, 2], v_min[i], v_max[i]) - v_min[i])
+                / (v_max[i] - v_min[i])
+                * 255
+            )
+    return img
+
+def rgb(red, green, blue, alpha):
+    """
+    Merges channels by creating a new
+    axis of lengths 3 or four.
+
+    Parameters
+    ----------
+    red, green, blue, alpha : numpy arrays
+        Different channels. Can be None.
+
+    Returns
+    -------
+    rgb_array : numpy array
+        The RGB stack.
+    """
+    n_channels = 4 if alpha is not None else 3
+    rgb_array = np.zeros((n_channels,) + red.shape)
+    channel_axis = len(red.shape)
+    if red is not None:
+        rgb_array[0] = red
+    if green is not None:
+        rgb_array[1] = green
+    if blue is not None:
+        rgb_array[2] = blue
+    if alpha is not None:
+        rgb_array[3] = alpha
+    rgb_array = np.rollaxis(rgb_array, 0, len(rgb_array.shape))
+    return rgb_array

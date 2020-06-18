@@ -52,26 +52,18 @@ roi_image, colors_for_rois = utils_video.utils.roi_image(roi_background_image, r
 # Generate ridge_line video
 dff_traces = np.load(dff_traces_file)
 ridge_line_generator = utils_video.generators.ridge_line(dff_traces, frame_times_2p, frame_times_beh, 2, size=(800, width_left_half))
-print("ridge_line:", next(ridge_line_generator).shape)
 
 roi_image_generator = utils_video.generators.static_image(roi_image, len(frame_times_beh), size=(-1, width_left_half))
-print("roi_image:", next(roi_image_generator).shape)
 roi_image_generator = utils_video.generators.pad(roi_image_generator, 0, 50, 0, 0)
-print("padded roi_image:", next(roi_image_generator).shape)
 
 left_hand_side_generator = utils_video.generators.stack([roi_image_generator, ridge_line_generator])
-print("left hand side:", next(left_hand_side_generator).shape)
 left_hand_side_generator = utils_video.generators.pad(left_hand_side_generator, 0, 0, 0, 50)
-print("padded left hand side:", next(left_hand_side_generator).shape)
 
 beh_generator = utils_video.generators.images(beh_images, size=(-1, width_right_half))
 
 # Add time stamp
 text = [f"{t:.1f} s" for t in frame_times_beh]
-beh_generator = utils_video.generators.add_text(beh_generator, text, scale=1.5, pos=(700, 80))
-print("beh", next(beh_generator).shape)
-
-
+beh_generator = utils_video.generators.add_text(beh_generator, text, scale=1.5, pos=(620, 80))
 
 
 dff_stack = utils2p.load_img(dff_stack_file)
@@ -81,7 +73,6 @@ dff_stack = crop(dff_stack)
 dff_generator = utils_video.generators.dff(dff_stack, size=(-1, width_right_half))
 indices = utils2p.synchronization.beh_idx_to_2p_idx(np.arange(len(frame_times_beh)), processed_lines["Cameras"], processed_lines["Frame Counter"])
 dff_generator = utils_video.generators.resample(dff_generator, indices)
-print("dff:", next(dff_generator).shape)
 
 
 dff_shape, dff_generator = utils_video.utils.get_generator_shape(dff_generator)
@@ -92,13 +83,11 @@ dynamic_3D_height = total_height - dff_shape[0] - beh_shape[0]
 
 pca_points = np.load(pca_points_file)
 dynamics_3D_generator = utils_video.generators.dynamics_3D(pca_points, 10, size=(dynamic_3D_height, width_right_half))
-#dynamics_3D_generator = utils_video.generators.pad(dynamics_3D_generator, 50, 0, 0, 0)
-print("dynamics", next(dynamics_3D_generator).shape)
+dynamics_3D_generator = utils_video.generators.resample(dynamics_3D_generator, indices)
 
 
 
 right_hand_side_generator = utils_video.generators.stack([beh_generator, dynamics_3D_generator, dff_generator])
-print("right hand side:", next(right_hand_side_generator).shape)
 
 generator = utils_video.generators.stack([left_hand_side_generator, right_hand_side_generator], axis=1)
 generator = utils_video.generators.pad(generator, 50, 50, 50, 50)

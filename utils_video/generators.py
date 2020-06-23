@@ -19,6 +19,7 @@ from .utils import (
     dynamics_3D_plot,
     rgb,
     process_2p_rgb,
+    plot_coxa_positions,
 )
 
 def dff(stack, size=None, font_size=16):
@@ -376,3 +377,24 @@ def frames_2p(red_stack, green_stack, percentiles=(5, 95)):
         frame = process_2p_rgb(frame, channels, v_max, v_min)
         frame = frame.astype(np.uint8)
         yield frame
+
+def coxa_locations(points3d, labels=None):
+    # allow for multiple experiments to be shown
+    if points3d.ndim == 3:
+        points3d = points3d[np.newaxis,]
+
+    n_exp = points3d.shape[0]
+        
+    coxa_indices = np.array([0, 5, 10, 19, 24, 29])
+    coxa_points = points3d[:, :, coxa_indices, :]
+    coxa_points = coxa_points.reshape((-1, 3))
+    centroid = np.mean(coxa_points, axis=0)
+    coxa_points = coxa_points - centroid
+    U, S, VT = np.linalg.svd(np.transpose(coxa_points))
+    #print("U:", U)
+    projected_coxa_points = np.transpose(np.dot(np.transpose(U), np.transpose(coxa_points)))
+    mins = np.min(projected_coxa_points, axis=0)
+    maxs = np.max(projected_coxa_points, axis=0)
+    projected_coxa_points = projected_coxa_points.reshape([n_exp, -1, len(coxa_indices), 3])
+    for frame_idx in range(projected_coxa_points.shape[1]):
+        yield plot_coxa_positions(projected_coxa_points[:, frame_idx], mins, maxs, labels) 

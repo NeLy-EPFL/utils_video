@@ -549,3 +549,33 @@ def rgb(red, green, blue, alpha):
 def add_dot(image):
     image = cv2.circle(image, (50, 50), 35, (255, 0, 0), -1)
     return image
+
+
+def plot_coxa_positions(points, mins, maxs, labels=None):
+    padding = np.abs(maxs) * 0.1
+    mins = mins - padding
+    maxs = maxs + padding
+    if points.ndim == 2:
+        points = points[
+            np.newaxis,
+        ]
+    if labels == None:
+        labels = [None,] * points.shape[0]
+    fig, axes = plt.subplots(2, 1, sharex=True)
+    for i, exp_points in enumerate(points):
+        axes[0].scatter(exp_points[:, 0], exp_points[:, 1], label=labels[i])
+        axes[0].set_xlim((mins[0], maxs[0]))
+        axes[0].set_ylim((mins[1], maxs[1]))
+        axes[0].legend(
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.2),
+            ncol=3,
+            fancybox=True,
+            shadow=True,
+        )
+        axes[1].scatter(exp_points[:, 0], exp_points[:, 2])
+        axes[1].set_xlim((mins[0], maxs[0]))
+        axes[1].set_ylim((mins[2], maxs[2]))
+    data = fig_to_array(fig)
+    plt.close()
+    return data

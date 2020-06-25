@@ -19,7 +19,9 @@ from .utils import (
     dynamics_3D_plot,
     rgb,
     process_2p_rgb,
+    add_dot,
 )
+
 
 def dff(stack, size=None, font_size=16):
     vmin = np.percentile(stack, 0.5)
@@ -30,12 +32,12 @@ def dff(stack, size=None, font_size=16):
     if size is None:
         image_shape = stack.shape[1:3]
         cbar_shape = (stack.shape[1], max(math.ceil(stack.shape[2] * 0.1), 150))
-    else: 
+    else:
         cbar_width = max(math.ceil(size[1] * 0.1), 150)
         image_shape = (size[0], size[1] - cbar_width)
         image_shape = resize_shape(image_shape, stack.shape[1:3])
         cbar_shape = (image_shape[0], cbar_width)
-    
+
     cbar = colorbar(norm, cmap, cbar_shape, font_size=font_size)
 
     def frame_generator():
@@ -230,11 +232,11 @@ def video(path, size=None, start=0):
     try:
         cap = cv2.VideoCapture(path)
 
-        if (cap.isOpened() == False):
+        if cap.isOpened() == False:
             raise RuntimeError(f"Error opening video stream or file at {path}.")
 
         current_frame = 0
-        while(cap.isOpened()):
+        while cap.isOpened():
             ret, frame = cap.read()
             if ret == True and current_frame >= start:
                 if size is not None:
@@ -289,6 +291,7 @@ def stack(generators, axis=0):
 
     return frame_generator()
 
+
 def df3d_3d_points(points3d):
     def generator():
         for pose in points3d:
@@ -298,19 +301,30 @@ def df3d_3d_points(points3d):
     return generator()
 
 
-def ridge_line(dff_traces, frame_times_2p, frame_times_beh, dt, size=(432, 720), font_size=16):
+def ridge_line(
+    dff_traces, frame_times_2p, frame_times_beh, dt, size=(432, 720), font_size=16
+):
     ylim = (np.nanmin(dff_traces), np.nanmax(dff_traces))
+
     def frame_generator():
         for t in frame_times_beh:
             indices = np.where((frame_times_2p > t - dt) & (frame_times_2p < t + dt))[0]
             start = max(indices[0] - 1, 0)
             stop = min(indices[-1] + 1, dff_traces.shape[1])
-            signals = dff_traces[:, start : stop]
-            times = frame_times_2p[start : stop]
-            
+            signals = dff_traces[:, start:stop]
+            times = frame_times_2p[start:stop]
+
             xlim = (t - dt, t + dt)
 
-            frame = ridge_line_plot(signals, times, vline=t, ylim=ylim, xlim=xlim, size=size, font_size=font_size)
+            frame = ridge_line_plot(
+                signals,
+                times,
+                vline=t,
+                ylim=ylim,
+                xlim=xlim,
+                size=size,
+                font_size=font_size,
+            )
             yield frame
 
     return frame_generator()
@@ -320,6 +334,7 @@ def static_image(image, n_frames, size=None):
     if size is not None:
         shape = resize_shape(size, image.shape[:2])
         image = cv2.resize(image, shape[::-1])
+
     def frame_generator():
         for i in range(n_frames):
             yield image
@@ -336,23 +351,41 @@ def resample(generator, indices):
                 frame = next(generator)
                 current_frame_index += 1
             yield frame
+
     return resampled_generator()
+
 
 def pad(generator, top, botom, left, right):
     def padded_generator():
         for img in generator:
-            padded_image = np.pad(img, ((top, botom), (left, right), (0, 0)), "constant", constant_values=0)
+            padded_image = np.pad(
+                img,
+                ((top, botom), (left, right), (0, 0)),
+                "constant",
+                constant_values=0,
+            )
             yield padded_image
+
     return padded_generator()
+
 
 def dynamics_3D(points, n, size=(432, 216), font_size=16):
     minimums = np.min(points, axis=0)
     maximums = np.max(points, axis=0)
+
     def generator():
         for i in range(points.shape[0]):
-            image = dynamics_3D_plot(points[max(0, i - n) : i + 1], minimums=minimums, maximums=maximums, size=size, font_size=font_size)
+            image = dynamics_3D_plot(
+                points[max(0, i - n) : i + 1],
+                minimums=minimums,
+                maximums=maximums,
+                size=size,
+                font_size=font_size,
+            )
             yield image
+
     return generator()
+
 
 def frames_2p(red_stack, green_stack, percentiles=(5, 95)):
     channels = []
@@ -370,9 +403,18 @@ def frames_2p(red_stack, green_stack, percentiles=(5, 95)):
         v_max.append(v_max[-1])
         v_min.append(v_min[-1])
 
-    
     for red_frame, green_frame in zip(red_stack, green_stack):
         frame = rgb(red_frame, green_frame, green_frame, None)
         frame = process_2p_rgb(frame, channels, v_max, v_min)
         frame = frame.astype(np.uint8)
         yield frame
+
+
+def change_points(generator, change_points, n_pause=1):
+    for i, image in enumerate(generator):
+        if i in change_points:
+            image = add_dot(image)
+            for j in range(n_pause):
+                yield image
+        else:
+            yield image

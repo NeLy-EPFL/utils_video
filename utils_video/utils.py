@@ -6,12 +6,14 @@ import cv2
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 import numpy as np
-from pandas.plotting._tools import _subplots, _flatten
+
+# from pandas.plotting._tools import _subplots, _flatten
 
 import deepfly.plot_util
 
 dpi = 100
 img3d_aspect = (2, 2)
+
 
 def get_generator_shape(generator):
     img = next(generator)
@@ -55,7 +57,7 @@ def resize_shape(shape, original_shape, allow_upsampling=False):
         raise ValueError("The values of shape cannot be smaller than -1.")
     if np.any(np.array(original_shape) < -1):
         raise ValueError("The values of original_shape cannot be smaller than -1.")
-    
+
     if shape[0] == -1 and shape[1] == -1:
         new_shape = original_shape
     elif shape[0] == -1:
@@ -70,7 +72,7 @@ def resize_shape(shape, original_shape, allow_upsampling=False):
         if new_shape[0] > original_shape[0] and new_shape[1] > original_shape[1]:
             return original_shape
     return new_shape
-        
+
 
 def match_greatest_resolution(shapes, axis):
     """
@@ -110,7 +112,7 @@ def match_greatest_resolution(shapes, axis):
     return shapes
 
 
-def grid_size(n_elements, element_size, ratio=4/3):
+def grid_size(n_elements, element_size, ratio=4 / 3):
     """
     This function computes the number of rows and
     columns to fit elements next to each other
@@ -156,18 +158,34 @@ def colorbar(norm, cmap, size, orientation="vertical", font_size=16):
 
     figsize = (size[1] / dpi, size[0] / dpi)
 
-    with plt.rc_context({"axes.edgecolor": "white", "xtick.color": "white", "ytick.color": "white", "figure.facecolor": "black", "font.size": font_size,}):
+    with plt.rc_context(
+        {
+            "axes.edgecolor": "white",
+            "xtick.color": "white",
+            "ytick.color": "white",
+            "figure.facecolor": "black",
+            "font.size": font_size,
+        }
+    ):
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         plt.imshow(np.random.rand(100).reshape((10, 10)))
-        color_bar = fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, orientation=orientation, fraction=1)
+        color_bar = fig.colorbar(
+            plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+            ax=ax,
+            orientation=orientation,
+            fraction=1,
+        )
         if orientation == "horizontal":
             color_bar.ax.set_xlabel(r"%$\frac{\Delta F}{F}$", rotation=0, color="white")
         else:
-            color_bar.ax.set_ylabel(r"%$\frac{\Delta F}{F}$", rotation=0, color="white", labelpad=15)
+            color_bar.ax.set_ylabel(
+                r"%$\frac{\Delta F}{F}$", rotation=0, color="white", labelpad=15
+            )
         ax.remove()
         data = fig_to_array(fig)
         plt.close()
     return data
+
 
 def add_colorbar(frames, cbar, pos, alpha=255):
     if frames.dtype != cbar.dtype:
@@ -193,6 +211,7 @@ def add_colorbar(frames, cbar, pos, alpha=255):
         with_color_bar = np.concatenate((cbar, frames), axis=1)
     return np.squeeze(with_color_bar)
 
+
 def load_video(path):
     cap = cv2.VideoCapture(path)
     if cap.isOpened() == False:
@@ -206,6 +225,7 @@ def load_video(path):
             break
     cap.release()
     return np.array(frames)
+
 
 def natsorted(list_of_strs):
     """
@@ -224,6 +244,7 @@ def natsorted(list_of_strs):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
     return sorted(list_of_strs, key=alphanum_key)
+
 
 def plot_df3d_pose(points3d):
     plt.style.use("dark_background")
@@ -279,7 +300,9 @@ def roi_image(background, mask, connectivity=4, min_size=0, cm="autumn"):
 
     # Check that background and mask are image of the same size
     if background.shape != mask.shape:
-        raise ValueError("Dimensions of the image given for background and mask do not match.")
+        raise ValueError(
+            "Dimensions of the image given for background and mask do not match."
+        )
 
     background = background / np.max(background) * 255
     img = np.zeros(background.shape + (3,))
@@ -293,7 +316,7 @@ def roi_image(background, mask, connectivity=4, min_size=0, cm="autumn"):
     _, label_img, stats, _ = cv2.connectedComponentsWithStats(
         mask, connectivity=connectivity
     )
-    selected_components, = np.where(np.array(stats)[:, 4] > min_size)
+    (selected_components,) = np.where(np.array(stats)[:, 4] > min_size)
     n_rois = len(selected_components)
     cm = plt.get_cmap(cm)
     colors = [cm(1.0 * i / n_rois) for i in range(n_rois)]
@@ -403,7 +426,9 @@ def ridge_line_plot(
             a.set_frame_on(False)
 
         _axes[-1].xaxis.set_visible(True)
-        _axes[-1].tick_params(axis="x", which="both", length=5, pad=10, labelrotation=45)
+        _axes[-1].tick_params(
+            axis="x", which="both", length=5, pad=10, labelrotation=45
+        )
 
         _axes[-1].set_xlabel("Time (s)", color="white")
         _axes[int(num_axes / 2)].set_ylabel("Neuron", color="white", labelpad=40)
@@ -420,6 +445,7 @@ def ridge_line_plot(
     plt.close()
     return data
 
+
 def dynamics_3D_plot(points, minimums, maximums, size=(432, 720), font_size=16):
     with plt.rc_context(
         {
@@ -432,19 +458,13 @@ def dynamics_3D_plot(points, minimums, maximums, size=(432, 720), font_size=16):
     ):
 
         fig = plt.figure(figsize=(size[1] / dpi, size[0] / dpi), dpi=dpi)
-        ax = fig.add_subplot(111, projection='3d', facecolor="black")
+        ax = fig.add_subplot(111, projection="3d", facecolor="black")
         # Some times warns because of zero divide (seems to be related with plotting several points at once if
         # all points are plotted with separate calls of ax.scatter no warning is raised.
         # ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=np.arange(points.shape[0]))
-        ax.scatter(
-            minimums[0], points[-1, 1], points[-1, 2], c="k"
-        )
-        ax.scatter(
-            points[-1, 0], maximums[1], points[-1, 2], c="k"
-        )
-        ax.scatter(
-            points[-1, 0], points[-1, 1], minimums[2], c="k"
-        )
+        ax.scatter(minimums[0], points[-1, 1], points[-1, 2], c="k")
+        ax.scatter(points[-1, 0], maximums[1], points[-1, 2], c="k")
+        ax.scatter(points[-1, 0], points[-1, 1], minimums[2], c="k")
         ax.plot(points[:, 0], points[:, 1], points[:, 2])
         ax.scatter(
             points[:-1, 0],
@@ -453,9 +473,7 @@ def dynamics_3D_plot(points, minimums, maximums, size=(432, 720), font_size=16):
             c=np.arange(points.shape[0] - 1),
             s=1,
         )
-        ax.scatter(
-            points[-1, 0], points[-1, 1], points[-1, 2], c="r"
-        )
+        ax.scatter(points[-1, 0], points[-1, 1], points[-1, 2], c="r")
         ax.set_xlim3d(minimums[0], maximums[0])
         ax.set_ylim3d(minimums[1], maximums[1])
         ax.set_zlim3d(minimums[2], maximums[2])
@@ -466,6 +484,7 @@ def dynamics_3D_plot(points, minimums, maximums, size=(432, 720), font_size=16):
         data = fig_to_array(fig)
         plt.close()
     return data
+
 
 def process_2p_rgb(img, channel, v_max, v_min):
     if isinstance(channel, str):
@@ -496,6 +515,7 @@ def process_2p_rgb(img, channel, v_max, v_min):
             )
     return img
 
+
 def rgb(red, green, blue, alpha):
     """
     Merges channels by creating a new
@@ -524,3 +544,8 @@ def rgb(red, green, blue, alpha):
         rgb_array[3] = alpha
     rgb_array = np.rollaxis(rgb_array, 0, len(rgb_array.shape))
     return rgb_array
+
+
+def add_dot(image):
+    image = cv2.circle(image, (50, 50), 35, (255, 0, 0), -1)
+    return image

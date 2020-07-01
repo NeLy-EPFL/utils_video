@@ -21,6 +21,12 @@ def make_video(video_path, frame_generator, fps, output_shape=(-1, 2880), n_fram
     fps : int
         Frame rate in frames per second.
     """
+    if fps.is_integer() and int(fps) != 1 and (int(fps) & (int(fps) - 1)) == 0:
+        import warnings
+
+        warnings.warn(
+            f"Frame rate {fps} is a power of 2. This can result in faulty video files."
+        )
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     first_frame = next(frame_generator)
     frame_generator = itertools.chain([first_frame], frame_generator)

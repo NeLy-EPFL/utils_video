@@ -21,6 +21,7 @@ from .utils import (
     process_2p_rgb,
     add_dot,
     plot_coxa_positions,
+    get_generator_shape,
 )
 
 
@@ -132,6 +133,41 @@ def merge_videos(paths, synchronization_indices=None, sort=False):
             yield frame
 
     return frame_generator()
+
+
+def grid(generators):
+    # Check that all generators have the same frame size.
+    shape, generators[0] = get_generator_shape(generators[0])
+    frame_size = shape[:2]
+    for i, generator in enumerate(generators[1:]):
+        current_shape, generators[i + 1] = get_generator_shape(generator)
+        current_frame_size = current_shape[:2]
+        if not np.all(frame_size == current_frame_size):
+            raise ValueError("Generators do not have the same frame size.")
+
+    n_generators = len(generators)
+    n_rows, n_cols = grid_size(n_generators, frame_size)
+
+    black_image = np.zeros(shape, dtype=np.uint8)
+    black_frame_generator = static_image(black_image)
+    for i in range(n_rows * n_cols - n_generators):
+        generators.append(black_frame_generator)
+
+    rows = []
+    for row in range(n_rows):
+        row_generator = stack(generators[row * n_cols : (row + 1) * n_cols], axis=1)
+        rows.append(row_generator)
+
+    grid_generator = stack(rows, axis=0)
+    return grid_generator
+
+
+def synchronization_indices(offsets, length, snippet_lengths):
+    indices = np.zeros((len(offsets), length), dtype=np.uint)
+    for i, offset in enumerate(offsets):
+        indices[i, offset:] = np.arange(length - offset)
+        indices[i] = np.clip(indices[i], None, snippet_lengths[i] - 1)
+    return indices
 
 
 def _grid_frames(snippets, synchronization_indices=None):
@@ -261,7 +297,15 @@ def add_text(
     line_type=2,
 ):
     for i, img in enumerate(generator):
-        for j, line in enumerate(text[i].split("\n")):
+        if img.shape[-1] == 3:
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
+
+        if type(text) == str:
+            frame_text = text
+        else:
+            frame_text = text[i]
+
+        for j, line in enumerate(frame_text.split("\n")):
             cv2.putText(
                 img, line, (pos[0], pos[1] + j * 40), font, scale, color, line_type
             )
@@ -331,16 +375,15 @@ def ridge_line(
     return frame_generator()
 
 
-def static_image(image, n_frames, size=None):
+def static_image(image, n_frames=np.inf, size=None):
     if size is not None:
         shape = resize_shape(size, image.shape[:2])
         image = cv2.resize(image, shape[::-1])
 
-    def frame_generator():
-        for i in range(n_frames):
-            yield image
-
-    return frame_generator()
+    i = 0
+    while i < n_frames:
+        yield image
+        i += 1
 
 
 def resample(generator, indices):

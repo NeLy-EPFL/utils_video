@@ -16,6 +16,6 @@ change_points = np.genfromtxt(path_to_change_points, delimiter=",", skip_header=
 print(change_points)
 
 generator = utils_video.generators.images(os.path.join(folder, "camera_6_img_*.jpg"))
-generator = utils_video.generators.change_points(generator, change_points, n_pause=100)
+generator = utils_video.generators.change_points(generator, change_points, n_pause=30)
 
 utils_video.make_video("change_points_vid.mp4", generator, 30)

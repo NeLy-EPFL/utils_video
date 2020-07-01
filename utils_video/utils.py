@@ -532,8 +532,16 @@ def rgb(red, green, blue, alpha):
         The RGB stack.
     """
     n_channels = 4 if alpha is not None else 3
-    rgb_array = np.zeros((n_channels,) + red.shape)
-    channel_axis = len(red.shape)
+
+    if red is not None:
+        shape = red.shape
+        dtype = red.dtype
+    else:
+        shape = green.shape
+        dtype = green.dtype
+
+    rgb_array = np.zeros((n_channels,) + shape, dtype=dtype)
+    channel_axis = len(shape)
     if red is not None:
         rgb_array[0] = red
     if green is not None:

@@ -21,7 +21,7 @@ def make_video(video_path, frame_generator, fps, output_shape=(-1, 2880), n_fram
     fps : int
         Frame rate in frames per second.
     """
-    if fps.is_integer() and int(fps) != 1 and (int(fps) & (int(fps) - 1)) == 0:
+    if float(fps).is_integer() and int(fps) != 1 and (int(fps) & (int(fps) - 1)) == 0:
         import warnings
 
         warnings.warn(

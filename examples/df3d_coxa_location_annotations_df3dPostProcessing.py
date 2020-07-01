@@ -12,7 +12,7 @@ import utils_video.generators
 import deepfly.plot_util
 from deepfly.procrustes import procrustes_seperate
 
-from df3dPostProcessing import df3dPostProcess
+from df3dPostProcessing import df3dPostProcess, convert_to_df3d_output_format
 
 
 spec = importlib.util.spec_from_file_location(
@@ -20,23 +20,6 @@ spec = importlib.util.spec_from_file_location(
 )
 annotations = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(annotations)
-
-keys = []
-for beh, data in annotations.annotations["semih's annotations"].items():
-    for exp in data:
-        key = exp["key"]
-        keys.append(key)
-files = ""
-keys = set(keys)
-for key in keys:
-    key = key[len("pose_result__data_paper_") :]
-    fly_index = key.find("Fly")
-    path = f"/data/paper/{key[:fly_index-1]}/{key[fly_index:fly_index+4]}/{key[fly_index+5:fly_index+12]}/behData/images.zip"
-    files += path + "\n"
-    print(path)
-with open("df3d_paper_annotated_experiments.sh", "w") as f:
-    f.write(files)
-exit()
 
 
 def get_most_recent_pose_result(folder):
@@ -50,64 +33,16 @@ def get_most_recent_pose_result(folder):
     return most_recent_pose_result
 
 
-def convert_to_df3d_output_format(aligned):
-    points3D = []
-    points3D.append(aligned["LF_leg"]["Coxa"]["raw_pos_aligned"])
-    points3D.append(aligned["LF_leg"]["Femur"]["raw_pos_aligned"])
-    points3D.append(aligned["LF_leg"]["Tibia"]["raw_pos_aligned"])
-    points3D.append(aligned["LF_leg"]["Tarsus"]["raw_pos_aligned"])
-    points3D.append(aligned["LF_leg"]["Claw"]["raw_pos_aligned"])
 
-    points3D.append(aligned["LM_leg"]["Coxa"]["raw_pos_aligned"])
-    points3D.append(aligned["LM_leg"]["Femur"]["raw_pos_aligned"])
-    points3D.append(aligned["LM_leg"]["Tibia"]["raw_pos_aligned"])
-    points3D.append(aligned["LM_leg"]["Tarsus"]["raw_pos_aligned"])
-    points3D.append(aligned["LM_leg"]["Claw"]["raw_pos_aligned"])
 
-    points3D.append(aligned["LH_leg"]["Coxa"]["raw_pos_aligned"])
-    points3D.append(aligned["LH_leg"]["Femur"]["raw_pos_aligned"])
-    points3D.append(aligned["LH_leg"]["Tibia"]["raw_pos_aligned"])
-    points3D.append(aligned["LH_leg"]["Tarsus"]["raw_pos_aligned"])
-    points3D.append(aligned["LH_leg"]["Claw"]["raw_pos_aligned"])
-
-    # Left antenna
-    points3D.append(np.zeros_like(aligned["LH_leg"]["Claw"]["raw_pos_aligned"]))
-    # Left stripe 1
-    points3D.append(np.zeros_like(aligned["LH_leg"]["Claw"]["raw_pos_aligned"]))
-    # Left stripe 2
-    points3D.append(np.zeros_like(aligned["LH_leg"]["Claw"]["raw_pos_aligned"]))
-    # Left stripe 3
-    points3D.append(np.zeros_like(aligned["LH_leg"]["Claw"]["raw_pos_aligned"]))
-
-    points3D.append(aligned["RF_leg"]["Coxa"]["raw_pos_aligned"])
-    points3D.append(aligned["RF_leg"]["Femur"]["raw_pos_aligned"])
-    points3D.append(aligned["RF_leg"]["Tibia"]["raw_pos_aligned"])
-    points3D.append(aligned["RF_leg"]["Tarsus"]["raw_pos_aligned"])
-    points3D.append(aligned["RF_leg"]["Claw"]["raw_pos_aligned"])
-
-    points3D.append(aligned["RM_leg"]["Coxa"]["raw_pos_aligned"])
-    points3D.append(aligned["RM_leg"]["Femur"]["raw_pos_aligned"])
-    points3D.append(aligned["RM_leg"]["Tibia"]["raw_pos_aligned"])
-    points3D.append(aligned["RM_leg"]["Tarsus"]["raw_pos_aligned"])
-    points3D.append(aligned["RM_leg"]["Claw"]["raw_pos_aligned"])
-
-    points3D.append(aligned["RH_leg"]["Coxa"]["raw_pos_aligned"])
-    points3D.append(aligned["RH_leg"]["Femur"]["raw_pos_aligned"])
-    points3D.append(aligned["RH_leg"]["Tibia"]["raw_pos_aligned"])
-    points3D.append(aligned["RH_leg"]["Tarsus"]["raw_pos_aligned"])
-    points3D.append(aligned["RH_leg"]["Claw"]["raw_pos_aligned"])
-
-    # Right antenna
-    points3D.append(np.zeros_like(aligned["RH_leg"]["Claw"]["raw_pos_aligned"]))
-    # Right stripe 1
-    points3D.append(np.zeros_like(aligned["RH_leg"]["Claw"]["raw_pos_aligned"]))
-    # Right stripe 2
-    points3D.append(np.zeros_like(aligned["RH_leg"]["Claw"]["raw_pos_aligned"]))
-    # Right stripe 3
-    points3D.append(np.zeros_like(aligned["RH_leg"]["Claw"]["raw_pos_aligned"]))
-
-    points3D = np.array(points3D)
-    points3D = np.swapaxes(points3D, 0, 1)
+def get_processed_points(directory):
+    most_recent_pose_result = get_most_recent_pose_result(directory)
+    if most_recent_pose_result is None:
+        return None
+    df3dPost = df3dPostProcess(most_recent_pose_result)
+    aligned = df3dPost.align_3d_data()
+    points3D = convert_to_df3d_output_format(aligned)
+    points3D = points3D[:40]
     return points3D
 
 
@@ -120,29 +55,10 @@ for beh, data in annotations.annotations["my annotations"].items():
         directory = exp["directory"]
         directory = os.path.join(directory, "behData/images/df3d/")
         print(directory)
-        most_recent_pose_result = get_most_recent_pose_result(directory)
-        if most_recent_pose_result is None:
+        points3D = get_processed_points(directory)
+        if points3D is None:
             continue
-        df3dPost = df3dPostProcess(most_recent_pose_result)
-        aligned = df3dPost.align_3d_data()
-        points3D = convert_to_df3d_output_format(aligned)
-        my_points.append(points3D[:10])
-        # print(type(aligned))
-        # print(aligned.keys())
-        # print(type(aligned["LF_leg"]))
-        # print(aligned["LF_leg"].keys())
-        # print(type(aligned["LF_leg"]["Coxa"]))
-        # print(aligned["LF_leg"]["Coxa"].keys())
-        # print(aligned["LF_leg"]["Coxa"]["fixed_pos_aligned"])
-        # print(aligned["LF_leg"]["Coxa"]["raw_pos_aligned"])
-        # print(aligned["LF_leg"]["Coxa"]["mean_length"])
-        # print(aligned["LF_leg"]["Tibia"].keys())
-        ## print(aligned["LF_leg"]["Tibia"]["fixed_pos_aligned"])
-        # print(aligned["LF_leg"]["Tibia"]["raw_pos_aligned"])
-        # print(aligned["LF_leg"]["Tibia"]["mean_length"])
-        # points3D = aligned["points3D"]
-        # print(points3D.shape)
-        # exit()
+        my_points.append(points3D)
 
 
 for beh, data in annotations.annotations["Chin-Lin's data"].items():
@@ -150,36 +66,24 @@ for beh, data in annotations.annotations["Chin-Lin's data"].items():
         directory = exp["directory"]
         directory = os.path.join(directory, "images/df3d_2/")
         print(directory)
-        most_recent_pose_result = get_most_recent_pose_result(directory)
-        if most_recent_pose_result is None:
+        points3D = get_processed_points(directory)
+        if points3D is None:
             continue
-        df3dPost = df3dPostProcess(most_recent_pose_result)
-        aligned = df3dPost.align_3d_data()
-        points3D = convert_to_df3d_output_format(aligned)
-        clc_points.append(points3D[:10])
+        clc_points.append(points3D)
 
 
 for beh, data in annotations.annotations["semih's annotations"].items():
     for exp in data:
         key = exp["key"]
-        print(key)
-        pose_result_file = os.path.join(
-            "/home/aymanns/utils_video/examples/pose_result_df3d_paper", key
-        )
-        df3dPost = df3dPostProcess(pose_result_file)
-        aligned = df3dPost.align_3d_data(rescale=False)
-        points3D = convert_to_df3d_output_format(aligned)
-        sg_points.append(points3D[:10])
+        key = key[len("pose_result__data_paper_") :]
+        fly_index = key.find("Fly")
+        directory = f"/mnt/internal_hdd/aymanns/df3d_paper_annotated_experiments/{key[:fly_index-1]}/{key[fly_index:fly_index+4]}/{key[fly_index+5:fly_index+12]}/behData/images/df3d"
+        print(directory)
+        points3D = get_processed_points(directory)
+        if points3D is None:
+            continue
+        sg_points.append(points3D)
 
-# print(np.array(points).shape)
-# exit()
-
-# print(type(my_points), len(my_points))
-# print(type(clc_points), len(clc_points))
-# print(type(sg_points), len(sg_points))
-# print(my_points[0].shape)
-# print(clc_points[0].shape)
-# print(sg_points[0].shape)
 points = np.array(my_points + clc_points + sg_points)
 coxa_indices = np.array([0, 5, 10, 19, 24, 29])
 coxa_points = points[:, :, coxa_indices, :]
@@ -206,13 +110,9 @@ def coxa_locations(points3d, U, mins, maxs, labels=None):
     coxa_points = coxa_points.reshape((-1, 3))
     centroid = np.mean(coxa_points, axis=0)
     coxa_points = coxa_points - centroid
-    # U, S, VT = np.linalg.svd(np.transpose(coxa_points))
-    # print("U:", U)
     projected_coxa_points = np.transpose(
         np.dot(np.transpose(U), np.transpose(coxa_points))
     )
-    # mins = np.min(projected_coxa_points, axis=0)
-    # maxs = np.max(projected_coxa_points, axis=0)
     projected_coxa_points = projected_coxa_points.reshape(
         [n_exp, -1, len(coxa_indices), 3]
     )
@@ -222,7 +122,6 @@ def coxa_locations(points3d, U, mins, maxs, labels=None):
         )
 
 
-# generator = coxa_locations(np.array(points), labels=None)
 my_generator = coxa_locations(np.array(my_points), U, mins, maxs, labels=None)
 clc_generator = coxa_locations(np.array(clc_points), U, mins, maxs, labels=None)
 sg_generator = coxa_locations(np.array(sg_points), U, mins, maxs, labels=None)

@@ -587,3 +587,64 @@ def plot_coxa_positions(points, mins, maxs, labels=None):
     data = fig_to_array(fig)
     plt.close()
     return data
+
+
+def plot_df3d_scatter(points, limits):
+    fig, axes = plt.subplots(1, 3, figsize=(27,9))
+    plot_axes = {0: (0, 1), 1: (0, 2), 2: (1, 2)}
+    half = int(points.shape[0] / 2)
+    for i in range(3):
+        x = points[:, plot_axes[i][0]]
+        y = points[:, plot_axes[i][1]]
+        axes[i].scatter(x[:half], y[:half])
+        axes[i].scatter(x[half:], y[half:])
+        x_limits = limits[plot_axes[i][0]]
+        y_limits = limits[plot_axes[i][1]]
+        axes[i].set_xlim(x_limits)
+        axes[i].set_ylim(y_limits)
+    data = fig_to_array(fig)
+    plt.close()
+    return data
+
+def plot_df3d_lines(points, limits, connections, colors, labels=None, linestyles=["solid",], title=None):
+    """
+    coonections: [np.array((0, 1), dtype=np.int), np.array((2, 3), dtype=np.int)
+    colors: one color for each connection
+    """
+    fig, axes = plt.subplots(1, 3, figsize=(27,9))
+    plot_axes = {0: (0, 1), 1: (0, 2), 2: (1, 2)}
+
+    if type(points) == list:
+        points = np.array(points)
+    elif type(points) == np.ndarray:
+        points = np.expand_dim(points, axis=0)
+    else:
+        raise TypeError("points has to be a list of numpy array if multiple flies should be plotted on top of each other or a numpy array for a single fly.")
+
+    if type(colors[0]) != list:
+        colors = [colors,] * len(points)
+
+    for i in range(3):
+        for j in range(points.shape[0]):
+            x = points[j, :, plot_axes[i][0]]
+            y = points[j, :, plot_axes[i][1]]
+            for c, connection in enumerate(connections):
+                axes[i].plot(x[connection], y[connection], color=colors[j][c], linestyle=linestyles[j], linewidth=4)
+            x_limits = limits[plot_axes[i][0]]
+            y_limits = limits[plot_axes[i][1]]
+            axes[i].set_xlim(x_limits)
+            axes[i].set_ylim(y_limits)
+    if labels is not None:
+        if len(labels) != len(linestyles):
+            raise ValueError("Length of labels and linestyles has to match.")
+        for linestyle, label in zip(linestyles, labels):
+            axes[2].plot((x_limits[0], x_limits[0]), y_limits, color="k", linestyle=linestyle, label=label, alpha=1)
+        lgd = axes[2].legend(fontsize=16)
+        #for lh in lgd.legendHandles:
+        #    lh._legmarker.set_alpha(1)
+    if title is not None:
+        fig.suptitle(title, fontsize=24)
+    data = fig_to_array(fig)
+    plt.close()
+    return data
+

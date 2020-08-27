@@ -22,6 +22,8 @@ from .utils import (
     add_dot,
     plot_coxa_positions,
     get_generator_shape,
+    plot_df3d_scatter,
+    plot_df3d_lines,
 )
 
 
@@ -492,3 +494,39 @@ def coxa_locations(points3d, labels=None):
         yield plot_coxa_positions(
             projected_coxa_points[:, frame_idx], mins, maxs, labels
         )
+
+
+def df3d_scatter_plots(points3D):
+    limits = (
+            (np.min(points3D[:, :, 0]), np.max(points3D[:, :, 0])),
+            (np.min(points3D[:, :, 1]), np.max(points3D[:, :, 1])),
+            (np.min(points3D[:, :, 2]), np.max(points3D[:, :, 2])),
+            )
+    for frame_points in points3D:
+        frame = plot_df3d_scatter(frame_points, limits)
+        yield frame
+
+def df3d_line_plots(points3D, connections, colors):
+    limits = (
+            (np.min(points3D[:, :, 0]), np.max(points3D[:, :, 0])),
+            (np.min(points3D[:, :, 1]), np.max(points3D[:, :, 1])),
+            (np.min(points3D[:, :, 2]), np.max(points3D[:, :, 2])),
+            )
+    for frame_points in points3D:
+        frame = plot_df3d_lines(frame_points, limits, connections, colors)
+        yield frame
+
+def df3d_line_plots_comparison(points3D, connections, colors, linestyles, labels, title=None):
+    if type(points3D) != list:
+        raise TypeError("points3D must be a list of numpy arrays.")
+    points3D = np.array(points3D)
+
+    limits = (
+            (np.nanmin(points3D[:, :, :, 0]), np.nanmax(points3D[:, :, :, 0])),
+            (np.nanmin(points3D[:, :, :, 1]), np.nanmax(points3D[:, :, :, 1])),
+            (np.nanmin(points3D[:, :, :, 2]), np.nanmax(points3D[:, :, :, 2])),
+            )
+    for frame_index in range(points3D.shape[1]):
+        frame_points = [points3D[i, frame_index] for i in range(points3D.shape[0])]
+        frame = plot_df3d_lines(frame_points, limits, connections, colors, labels=labels, linestyles=linestyles, title=title)
+        yield frame

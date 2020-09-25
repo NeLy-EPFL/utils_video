@@ -8,6 +8,7 @@ import cv2
 
 from .utils import (
     grid_size,
+    fig_to_array,
     colorbar,
     add_colorbar,
     load_video,
@@ -530,3 +531,38 @@ def df3d_line_plots_comparison(points3D, connections, colors, linestyles, labels
         frame_points = [points3D[i, frame_index] for i in range(points3D.shape[0])]
         frame = plot_df3d_lines(frame_points, limits, connections, colors, labels=labels, linestyles=linestyles, title=title)
         yield frame
+
+
+def optical_flow(pitch, yaw, roll, times, window_size, ylims=None):
+    fig, axes = plt.subplots(3, 1, sharex=True)
+  
+    if ylims is None:
+        axes[0].set_ylim(np.min(pitch), np.max(pitch))
+        axes[1].set_ylim(np.min(yaw), np.max(yaw))
+        axes[2].set_ylim(np.min(roll), np.max(roll))
+    else:
+        for i in range(3):
+            axes[i].set_ylim(ylims[i])
+   
+    axes[0].set_ylabel("Pitch [mm/s]")
+    axes[1].set_ylabel("Yaw [mm/s]")
+    axes[2].set_ylabel("Roll [mm/s]")
+
+    axes[2].set_xlabel("Time [s]")
+
+    axes[0].plot(times, pitch)
+    axes[1].plot(times, yaw)
+    axes[2].plot(times, roll)
+   
+    vlines = [axes[i].plot([times[0], times[0]], [ylims[i][0], ylims[i][1]], linestyle="dashed")[0] for i in range(3)]
+
+    dt = window_size / 2
+    for i, t in enumerate(times):
+        for i in range(3):
+            axes[i].set_xlim(t-dt, t+dt)
+            vlines[i].set_data([t, t], [ylims[i][0], ylims[i][1]])
+        frame = fig_to_array(fig)    
+        if i == len(times) - 1:
+            plt.close()
+        yield frame
+

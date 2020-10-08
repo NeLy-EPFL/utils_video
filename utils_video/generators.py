@@ -442,6 +442,8 @@ def frames_2p(red_stack, green_stack, percentiles=(5, 95)):
         channels.append("r")
         v_max.append(np.percentile(red_stack, percentiles[1]))
         v_min.append(np.percentile(red_stack, percentiles[0]))
+    else:
+        red_stack = [None for i in range(len(green_stack))]
     if green_stack is not None:
         channels.append("g")
         v_max.append(np.percentile(green_stack, percentiles[1]))
@@ -449,6 +451,8 @@ def frames_2p(red_stack, green_stack, percentiles=(5, 95)):
         channels.append("b")
         v_max.append(v_max[-1])
         v_min.append(v_min[-1])
+    else:
+        green_stack = [None for i in range(len(red_stack))]
 
     for red_frame, green_frame in zip(red_stack, green_stack):
         frame = rgb(red_frame, green_frame, green_frame, None)

@@ -537,20 +537,24 @@ def df3d_line_plots_comparison(points3D, connections, colors, linestyles, labels
         yield frame
 
 
-def optical_flow(pitch, yaw, roll, times, window_size, ylims=None):
+def optical_flow(pitch, yaw, roll, times, window_size, ylims=None, frame_times=None):
+    if frame_times is None:
+        frame_times = times
+
     fig, axes = plt.subplots(3, 1, sharex=True)
   
     if ylims is None:
-        axes[0].set_ylim(np.min(pitch), np.max(pitch))
-        axes[1].set_ylim(np.min(yaw), np.max(yaw))
-        axes[2].set_ylim(np.min(roll), np.max(roll))
-    else:
-        for i in range(3):
-            axes[i].set_ylim(ylims[i])
+        ylims = (
+                 (np.min(pitch), np.max(pitch)),
+                 (np.min(yaw), np.max(yaw)),
+                 (np.min(roll), np.max(roll)),
+                )
+    for i in range(3):
+        axes[i].set_ylim(ylims[i])
    
-    axes[0].set_ylabel("Pitch [mm/s]")
-    axes[1].set_ylabel("Yaw [mm/s]")
-    axes[2].set_ylabel("Roll [mm/s]")
+    axes[0].set_ylabel("Pitch")
+    axes[1].set_ylabel("Yaw")
+    axes[2].set_ylabel("Roll")
 
     axes[2].set_xlabel("Time [s]")
 
@@ -558,10 +562,10 @@ def optical_flow(pitch, yaw, roll, times, window_size, ylims=None):
     axes[1].plot(times, yaw)
     axes[2].plot(times, roll)
    
-    vlines = [axes[i].plot([times[0], times[0]], [ylims[i][0], ylims[i][1]], linestyle="dashed")[0] for i in range(3)]
+    vlines = [axes[i].plot([frame_times[0], frame_times[0]], [ylims[i][0], ylims[i][1]], linestyle="dashed")[0] for i in range(3)]
 
     dt = window_size / 2
-    for i, t in enumerate(times):
+    for i, t in enumerate(frame_times):
         for i in range(3):
             axes[i].set_xlim(t-dt, t+dt)
             vlines[i].set_data([t, t], [ylims[i][0], ylims[i][1]])

@@ -138,7 +138,7 @@ def merge_videos(paths, synchronization_indices=None, sort=False):
     return frame_generator()
 
 
-def grid(generators):
+def grid(generators, ratio=4/3):
     # Check that all generators have the same frame size.
     shape, generators[0] = get_generator_shape(generators[0])
     frame_size = shape[:2]
@@ -149,7 +149,7 @@ def grid(generators):
             raise ValueError("Generators do not have the same frame size.")
 
     n_generators = len(generators)
-    n_rows, n_cols = grid_size(n_generators, frame_size)
+    n_rows, n_cols = grid_size(n_generators, frame_size, ratio=ratio)
 
     black_image = np.zeros(shape, dtype=np.uint8)
     black_frame_generator = static_image(black_image)

@@ -138,7 +138,7 @@ def merge_videos(paths, synchronization_indices=None, sort=False):
     return frame_generator()
 
 
-def grid(generators, ratio=4/3):
+def grid(generators, ratio=4/3, allow_different_length=False):
     # Check that all generators have the same frame size.
     shape, generators[0] = get_generator_shape(generators[0])
     frame_size = shape[:2]
@@ -158,10 +158,10 @@ def grid(generators, ratio=4/3):
 
     rows = []
     for row in range(n_rows):
-        row_generator = stack(generators[row * n_cols : (row + 1) * n_cols], axis=1)
+        row_generator = stack(generators[row * n_cols : (row + 1) * n_cols], axis=1, allow_different_length=allow_different_length)
         rows.append(row_generator)
 
-    grid_generator = stack(rows, axis=0)
+    grid_generator = stack(rows, axis=0, allow_different_length=allow_different_length)
     return grid_generator
 
 
@@ -315,7 +315,42 @@ def add_text(
         yield img
 
 
-def stack(generators, axis=0):
+def _backup_generator(generator):
+    """
+    keeps a copy of the last output and keeps returning it
+    if the next causes an error.
+    """
+    backup_frame = None
+    try:
+        for frame in generator:
+            backup_frame = frame.copy()
+            yield frame
+    except Exception as err:
+        print("The following exception occurred when accessing the next element of a generator. Returning the previous element indefinitely.")
+        print(err)
+    while True:
+        yield backup_frame
+
+
+def crop_generator(generator, n):
+    """
+    Limit the number of returned elements to n.
+    """
+    for i, item in enumerate(generator):
+        if i < n:
+            yield item
+        else:
+            return
+
+
+def stack(generators, axis=0, allow_different_length=False):
+    """
+    CAUTION: if you allow_different_length you MUST terminate
+    the video using the n_frames parameter of the make_video function.
+    Alternatively you can use crop_generator.
+    """
+    if allow_different_length:
+        generators = list(map(_backup_generator, generators))
     def frame_generator():
         # Extract shapes of images
         shapes = []

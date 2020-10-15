@@ -294,7 +294,7 @@ def add_text(
     generator,
     text,
     pos=(10, 240),
-    font=cv2.FONT_HERSHEY_SIMPLEX,
+    font=cv2.FONT_HERSHEY_DUPLEX,
     scale=1,
     color=(255, 255, 255),
     line_type=2,

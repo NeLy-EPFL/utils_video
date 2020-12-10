@@ -184,6 +184,7 @@ def colorbar(norm, cmap, size, orientation="vertical", font_size=16):
         ax.remove()
         data = fig_to_array(fig)
         plt.close()
+        data = cv2.resize(data, size[::-1])
     return data
 
 

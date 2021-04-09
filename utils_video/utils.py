@@ -618,7 +618,7 @@ def plot_df3d_lines(points, limits, connections, colors, labels=None, linestyles
     if type(points) == list:
         points = np.array(points)
     elif type(points) == np.ndarray:
-        points = np.expand_dim(points, axis=0)
+        points = np.expand_dims(points, axis=0)
     else:
         raise TypeError("points has to be a list of numpy array if multiple flies should be plotted on top of each other or a numpy array for a single fly.")
 

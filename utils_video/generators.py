@@ -5,6 +5,10 @@ import math
 import numpy as np
 from matplotlib import pyplot as plt
 import cv2
+import PIL
+import PIL.ImageFont
+import PIL.Image
+import PIL.ImageDraw
 
 from .utils import (
     grid_size,
@@ -286,6 +290,7 @@ def video(path, size=None, start=0):
                 yield frame
             elif ret == False:
                 break
+            current_frame += 1
     finally:
         cap.release()
 
@@ -312,6 +317,30 @@ def add_text(
             cv2.putText(
                 img, line, (pos[0], pos[1] + j * 40), font, scale, color, line_type
             )
+        yield img
+
+def add_text_PIL(
+    generator,
+    text,
+    pos=(10, 240),
+    font_file="Arial.ttf",
+    color="#FFF",
+    size=50,
+):
+    font = PIL.ImageFont.truetype(font_file, size)
+    for i, img in enumerate(generator):
+        img = PIL.Image.fromarray(img)
+        draw = PIL.ImageDraw.Draw(img)
+        if type(text) == str:
+            frame_text = text
+        else:
+            frame_text = text[i]
+
+        draw.text(pos, frame_text, font=font, fill=color)
+        draw = PIL.ImageDraw.Draw(img)
+        
+        img = np.array(img)
+
         yield img
 
 
@@ -555,6 +584,28 @@ def df3d_line_plots(points3D, connections, colors):
     for frame_points in points3D:
         frame = plot_df3d_lines(frame_points, limits, connections, colors)
         yield frame
+
+
+def df3d_line_plots_aligned(aligned, fixed_coxa=True):
+    n_frames = len(aligned["LF_leg"]["Femur"]["raw_pos_aligned"])
+    points3D = np.zeros((n_frames, 30, 3))
+    for i, leg in enumerate(["LF_leg", "LM_leg", "LH_leg", "RF_leg", "RM_leg", "RH_leg"]):
+        for j, joint in enumerate(["Coxa", "Femur", "Tibia", "Tarsus", "Claw"]):
+            if fixed_coxa and joint == "Coxa":
+                points3D[:, i * 5 + j, :] = np.tile(aligned[leg][joint]["fixed_pos_aligned"], (n_frames, 1))
+            else:
+                points3D[:, i * 5 + j, :] = aligned[leg][joint]["raw_pos_aligned"]
+
+    connections = [
+              np.array((0, 1, 2, 3, 4), dtype=np.int),
+              np.array((5, 6, 7, 8, 9), dtype=np.int),
+              np.array((10, 11, 12, 13, 14), dtype=np.int),
+              np.array((15, 16, 17, 18, 19), dtype=np.int),
+              np.array((20, 21, 22, 23, 24), dtype=np.int),
+              np.array((25, 26, 27, 28, 29), dtype=np.int),
+              ]
+    colors = ["r", "g", "b", "c", "m", "y"]
+    return df3d_line_plots(points3D, connections, colors)
 
 def df3d_line_plots_comparison(points3D, connections, colors, linestyles, labels, title=None):
     if type(points3D) != list:

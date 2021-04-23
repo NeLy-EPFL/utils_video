@@ -9,6 +9,7 @@ import PIL
 import PIL.ImageFont
 import PIL.Image
 import PIL.ImageDraw
+from scipy.ndimage.filters import gaussian_filter
 
 from .utils import (
     grid_size,
@@ -32,9 +33,9 @@ from .utils import (
 )
 
 
-def dff(stack, size=None, font_size=16):
-    vmin = np.percentile(stack, 0.5)
-    vmax = np.percentile(stack, 99.5)
+def dff(stack, size=None, font_size=16, pmin=0.5, pmax=99.5, vmin=None, vmax=None, blur=0):
+    vmin = np.percentile(stack, pmin) if vmin is None else vmin
+    vmax = np.percentile(stack, pmax)if vmax is None else vmax
     norm = plt.Normalize(vmin, vmax)
     cmap = plt.cm.jet
 
@@ -51,6 +52,8 @@ def dff(stack, size=None, font_size=16):
 
     def frame_generator():
         for frame in stack:
+            if blur:
+                frame = gaussian_filter(frame, (blur, blur))
             frame = cmap(norm(frame))
             frame = (frame * 255).astype(np.uint8)
             frame = cv2.resize(frame, image_shape[::-1])

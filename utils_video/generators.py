@@ -535,6 +535,14 @@ def change_points(generator, change_points, n_pause=1):
             yield image
 
 
+def add_stimulus_dot(generator, stimulus):
+    for i, image in enumerate(generator):
+        if stimulus[i]:
+            yield add_dot(image)
+        else:
+            yield image
+
+
 def coxa_locations(points3d, labels=None):
     # allow for multiple experiments to be shown
     if points3d.ndim == 3:

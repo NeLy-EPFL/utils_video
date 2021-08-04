@@ -32,9 +32,11 @@ from .utils import (
 )
 
 
-def dff(stack, size=None, font_size=16):
-    vmin = np.percentile(stack, 0.5)
-    vmax = np.percentile(stack, 99.5)
+def dff(stack, size=None, font_size=16, vmin=None, vmax=None):
+    if vmin is None:
+        vmin = np.percentile(stack, 0.5)
+    if vmax is None:
+        vmax = np.percentile(stack, 99.5)
     norm = plt.Normalize(vmin, vmax)
     cmap = plt.cm.jet
 
@@ -614,6 +616,27 @@ def df3d_line_plots_aligned(aligned, fixed_coxa=True):
               ]
     colors = ["r", "g", "b", "c", "m", "y"]
     return df3d_line_plots(points3D, connections, colors)
+
+
+def df3d_line_plots_df(df):
+    n_frames = df.shape[0]
+    points3D = np.zeros((n_frames, 30, 3))
+    for i, leg in enumerate(["LF_leg", "LM_leg", "LH_leg", "RF_leg", "RM_leg", "RH_leg"]):
+        for j, joint in enumerate(["Coxa", "Femur", "Tibia", "Tarsus", "Claw"]):
+            for k, axes in enumerate(["x", "y", "z"]):
+                points3D[:, i * 5 + j, k] = df["_".join(["Pose_", leg, joint, axes])].values
+
+    connections = [
+              np.array((0, 1, 2, 3, 4), dtype=np.int),
+              np.array((5, 6, 7, 8, 9), dtype=np.int),
+              np.array((10, 11, 12, 13, 14), dtype=np.int),
+              np.array((15, 16, 17, 18, 19), dtype=np.int),
+              np.array((20, 21, 22, 23, 24), dtype=np.int),
+              np.array((25, 26, 27, 28, 29), dtype=np.int),
+              ]
+    colors = ["r", "g", "b", "c", "m", "y"]
+    return df3d_line_plots(points3D, connections, colors)
+
 
 def df3d_line_plots_comparison(points3D, connections, colors, linestyles, labels, title=None):
     if type(points3D) != list:

@@ -281,10 +281,10 @@ def video(path, size=None, start=0):
         if cap.isOpened() == False:
             raise RuntimeError(f"Error opening video stream or file at {path}.")
 
-        current_frame = 0
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start)
         while cap.isOpened():
             ret, frame = cap.read()
-            if ret == True and current_frame >= start:
+            if ret == True:
                 if size is not None:
                     shape = resize_shape(size, frame.shape[:2])
                     frame = cv2.resize(frame, shape[::-1])
@@ -292,7 +292,6 @@ def video(path, size=None, start=0):
                 yield frame
             elif ret == False:
                 break
-            current_frame += 1
     finally:
         cap.release()
 

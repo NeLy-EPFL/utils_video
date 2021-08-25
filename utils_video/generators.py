@@ -33,7 +33,7 @@ from .utils import (
 )
 
 
-def dff(stack, size=None, font_size=16, vmin=None, vmax=None, log=False):
+def dff(stack, size=None, font_size=16, vmin=None, vmax=None, log=False, background="black"):
     if vmin is None:
         vmin = np.percentile(stack, 0.5)
     if vmax is None:
@@ -56,7 +56,7 @@ def dff(stack, size=None, font_size=16, vmin=None, vmax=None, log=False):
         image_shape = resize_shape(image_shape, stack.shape[1:3])
         cbar_shape = (image_shape[0], cbar_width)
 
-    cbar = colorbar(norm, cmap, cbar_shape, font_size=font_size)
+    cbar = colorbar(norm, cmap, cbar_shape, font_size=font_size, background=background)
 
     def frame_generator():
         for frame in stack:

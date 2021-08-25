@@ -152,20 +152,35 @@ def fig_to_array(fig):
     return data
 
 
-def colorbar(norm, cmap, size, orientation="vertical", font_size=16):
+def colorbar(norm, cmap, size, orientation="vertical", font_size=16, background="black"):
     if orientation not in ["horizontal", "vertical"]:
         raise ValueError("""orientation can only be "horizontal" or "vertical".""")
 
     figsize = (size[1] / dpi, size[0] / dpi)
 
-    with plt.rc_context(
-        {
+    if background == "black":
+        config = {
             "axes.edgecolor": "white",
             "xtick.color": "white",
             "ytick.color": "white",
             "figure.facecolor": "black",
             "font.size": font_size,
+            "text.color": "white",
         }
+    elif background == "white":
+        config = {
+            "axes.edgecolor": "black",
+            "xtick.color": "black",
+            "ytick.color": "black",
+            "figure.facecolor": "white",
+            "font.size": font_size,
+            "text.color": "black",
+        }
+    else:
+        raise ValueError(f"Unknown background color {background}")
+
+    with plt.rc_context(
+        config
     ):
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         plt.imshow(np.random.rand(100).reshape((10, 10)))
@@ -179,7 +194,7 @@ def colorbar(norm, cmap, size, orientation="vertical", font_size=16):
             color_bar.ax.set_xlabel(r"%$\frac{\Delta F}{F}$", rotation=0, color="white")
         else:
             color_bar.ax.set_ylabel(
-                r"%$\frac{\Delta F}{F}$", rotation=0, color="white", labelpad=15
+                r"%$\frac{\Delta F}{F}$", rotation=0, color=config["text.color"], labelpad=15
             )
         ax.remove()
         data = fig_to_array(fig)

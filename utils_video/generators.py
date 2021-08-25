@@ -4,6 +4,7 @@ import math
 
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.colors
 import cv2
 import PIL
 import PIL.ImageFont
@@ -32,12 +33,18 @@ from .utils import (
 )
 
 
-def dff(stack, size=None, font_size=16, vmin=None, vmax=None):
+def dff(stack, size=None, font_size=16, vmin=None, vmax=None, log=False):
     if vmin is None:
         vmin = np.percentile(stack, 0.5)
     if vmax is None:
         vmax = np.percentile(stack, 99.5)
-    norm = plt.Normalize(vmin, vmax)
+    if log:
+        if vmin > 0:
+            norm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
+        else:
+            norm = matplotlib.colors.SymLogNorm(linthresh=0.5, vmin=vmin, vmax=vmax)
+    else:
+        norm = plt.Normalize(vmin, vmax)
     cmap = plt.cm.jet
 
     if size is None:

@@ -152,7 +152,8 @@ def fig_to_array(fig):
     return data
 
 
-def colorbar(norm, cmap, size, orientation="vertical", font_size=16, background="black"):
+def colorbar(norm, cmap, size, orientation="vertical", font_size=16, background="black",
+             label=r"%$\frac{\Delta F}{F}$"):
     if orientation not in ["horizontal", "vertical"]:
         raise ValueError("""orientation can only be "horizontal" or "vertical".""")
 
@@ -191,10 +192,10 @@ def colorbar(norm, cmap, size, orientation="vertical", font_size=16, background=
             fraction=1,
         )
         if orientation == "horizontal":
-            color_bar.ax.set_xlabel(r"%$\frac{\Delta F}{F}$", rotation=0, color="white")
+            color_bar.ax.set_xlabel(label, rotation=0, color="white")
         else:
             color_bar.ax.set_ylabel(
-                r"%$\frac{\Delta F}{F}$", rotation=0, color=config["text.color"], labelpad=15
+                label, rotation=0, color=config["text.color"], labelpad=15
             )
         ax.remove()
         data = fig_to_array(fig)

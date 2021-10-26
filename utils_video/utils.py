@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 import numpy as np
 
-# from pandas.plotting._tools import _subplots, _flatten
+#from pandas.plotting._tools import _subplots, _flatten
 
 import deepfly.plot_util
 
@@ -362,6 +362,7 @@ def ridge_line_plot(
     overlap=1,
     size=(720, 432),
     font_size=16,
+    background="black",
 ):
     """
     This function creates a ridge line plot of all signals.
@@ -403,15 +404,29 @@ def ridge_line_plot(
         xlim = (np.min(t), np.max(t))
     num_axes = signals.shape[0]
     clip_on = True
-    with plt.rc_context(
-        {
+
+    if background == "black":
+        config = {
             "axes.edgecolor": "white",
             "xtick.color": "white",
             "ytick.color": "white",
             "figure.facecolor": "black",
             "font.size": font_size,
+            "text.color": "white",
         }
-    ):
+    elif background == "white":
+        config = {
+            "axes.edgecolor": "black",
+            "xtick.color": "black",
+            "ytick.color": "black",
+            "figure.facecolor": "white",
+            "font.size": font_size,
+            "text.color": "black",
+        }
+    else:
+        raise ValueError(f"Unknown background color {background}.")
+
+    with plt.rc_context(config):
         fig_ridge, axes = _subplots(
             naxes=num_axes,
             squeeze=False,
@@ -447,7 +462,7 @@ def ridge_line_plot(
         )
 
         _axes[-1].set_xlabel("Time (s)", color="white")
-        _axes[int(num_axes / 2)].set_ylabel("Neuron", color="white", labelpad=40)
+        _axes[int(num_axes / 2)].set_ylabel("Neuron", color=config["text.color"], labelpad=40)
 
         h_pad = 5 + (-5 * (1 + overlap))
         fig_ridge.tight_layout(h_pad=h_pad)

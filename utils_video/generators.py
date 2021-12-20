@@ -281,7 +281,7 @@ def images(path, size=None, start=0):
         yield img
 
 
-def video(path, size=None, start=0):
+def video(path, size=None, start=0, stop=np.inf):
     try:
         cap = cv2.VideoCapture(path)
 
@@ -289,7 +289,8 @@ def video(path, size=None, start=0):
             raise RuntimeError(f"Error opening video stream or file at {path}.")
 
         cap.set(cv2.CAP_PROP_POS_FRAMES, start)
-        while cap.isOpened():
+        frame_idx = start
+        while cap.isOpened() and frame_idx < stop:
             ret, frame = cap.read()
             if ret == True:
                 if size is not None:
@@ -297,6 +298,7 @@ def video(path, size=None, start=0):
                     frame = cv2.resize(frame, shape[::-1])
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
                 yield frame
+                frame_idx += 1
             elif ret == False:
                 break
     finally:
@@ -543,10 +545,10 @@ def change_points(generator, change_points, n_pause=1):
             yield image
 
 
-def add_stimulus_dot(generator, stimulus):
+def add_stimulus_dot(generator, stimulus, radius=35, center=(50, 50)):
     for i, image in enumerate(generator):
         if stimulus[i]:
-            yield add_dot(image)
+            yield add_dot(image, radius=radius, center=center)
         else:
             yield image
 

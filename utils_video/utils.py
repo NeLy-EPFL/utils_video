@@ -191,11 +191,12 @@ def colorbar(norm, cmap, size, orientation="vertical", font_size=16, background=
             orientation=orientation,
             fraction=1,
         )
+        color_bar.ax.tick_params(labelsize=font_size)
         if orientation == "horizontal":
-            color_bar.ax.set_xlabel(label, rotation=0, color="white")
+            color_bar.ax.set_xlabel(label, rotation=0, color="white", fontsize=font_size)
         else:
             color_bar.ax.set_ylabel(
-                label, rotation=0, color=config["text.color"], labelpad=15
+                label, rotation=0, color=config["text.color"], labelpad=15, fontsize=font_size
             )
         ax.remove()
         data = fig_to_array(fig)

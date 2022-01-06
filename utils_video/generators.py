@@ -151,7 +151,11 @@ def merge_videos(paths, synchronization_indices=None, sort=False):
     return frame_generator()
 
 
-def grid(generators, ratio=4/3, allow_different_length=False):
+def grid(generators, ratio=4/3, allow_different_length=False, padding=None):
+    
+    if not isinstance(padding, tuple):
+        padding = (padding, padding)
+
     # Check that all generators have the same frame size.
     shape, generators[0] = get_generator_shape(generators[0])
     frame_size = shape[:2]
@@ -159,7 +163,7 @@ def grid(generators, ratio=4/3, allow_different_length=False):
         current_shape, generators[i + 1] = get_generator_shape(generator)
         current_frame_size = current_shape[:2]
         if not np.all(frame_size == current_frame_size):
-            raise ValueError("Generators do not have the same frame size.")
+            raise ValueError(f"Generators do not have the same frame size. Sizes are {frame_size} and {current_frame_size}.")
 
     n_generators = len(generators)
     n_rows, n_cols = grid_size(n_generators, frame_size, ratio=ratio)
@@ -171,10 +175,10 @@ def grid(generators, ratio=4/3, allow_different_length=False):
 
     rows = []
     for row in range(n_rows):
-        row_generator = stack(generators[row * n_cols : (row + 1) * n_cols], axis=1, allow_different_length=allow_different_length)
+        row_generator = stack(generators[row * n_cols : (row + 1) * n_cols], axis=1, allow_different_length=allow_different_length, padding=padding[1])
         rows.append(row_generator)
 
-    grid_generator = stack(rows, axis=0, allow_different_length=allow_different_length)
+    grid_generator = stack(rows, axis=0, allow_different_length=allow_different_length, padding=padding[0])
     return grid_generator
 
 
@@ -382,7 +386,7 @@ def crop_generator(generator, n):
             return
 
 
-def stack(generators, axis=0, allow_different_length=False):
+def stack(generators, axis=0, allow_different_length=False, padding=None):
     """
     CAUTION: if you allow_different_length you MUST terminate
     the video using the n_frames parameter of the make_video function.
@@ -401,6 +405,13 @@ def stack(generators, axis=0, allow_different_length=False):
         # Find target shapes
         shapes = match_greatest_resolution(shapes, axis=(axis + 1) % 2)
 
+        if padding is not None:
+            if axis == 0:
+                padding_img = np.zeros((padding, *img.shape[1:]), dtype=img.dtype)
+            if axis == 1:
+                padding_img = np.zeros((img.shape[0], padding, *img.shape[2:]), dtype=img.dtype)
+            padding_imgs = tuple([padding_img,] * (len(generators) - 1))
+
         for imgs in zip(*generators):
             # Resize images
             imgs = list(imgs)
@@ -409,6 +420,9 @@ def stack(generators, axis=0, allow_different_length=False):
                     img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
                 imgs[i] = cv2.resize(img, shape[::-1])
 
+            if padding is not None:
+                # Interleave images with padding images
+                imgs = [x for x in itertools.chain(*itertools.zip_longest(imgs, padding_imgs)) if x is not None]
             yield np.concatenate(imgs, axis=axis)
 
     return frame_generator()

@@ -587,8 +587,8 @@ def rgb(red, green, blue, alpha):
     return rgb_array
 
 
-def add_dot(image, radius=35, center=(50, 50)):
-    image = cv2.circle(image, center, radius, (255, 0, 0), -1)
+def add_dot(image, radius=35, center=(50, 50), color=(255, 0, 0)):
+    image = cv2.circle(image, center, radius, color, -1)
     return image
 
 

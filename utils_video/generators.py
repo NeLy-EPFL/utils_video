@@ -559,10 +559,13 @@ def change_points(generator, change_points, n_pause=1):
             yield image
 
 
-def add_stimulus_dot(generator, stimulus, radius=35, center=(50, 50)):
+def add_stimulus_dot(generator, stimulus, radius=35, center=(50, 50), color=(255, 0, 0)):
+    color = np.array(color)
+    if np.ndim(color) == 1:
+        color = [color,] * len(stimulus)
     for i, image in enumerate(generator):
         if stimulus[i]:
-            yield add_dot(image, radius=radius, center=center)
+            yield add_dot(image, radius=radius, center=center, color=color[i])
         else:
             yield image
 

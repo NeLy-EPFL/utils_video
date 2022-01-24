@@ -657,6 +657,9 @@ def plot_df3d_lines(points, limits, connections, colors, labels=None, linestyles
     if type(colors[0]) != list:
         colors = [colors,] * len(points)
 
+    if len(linestyles) == 1 and len(points) != 1:
+        linestyles = linestyles * len(points)
+
     for i in range(3):
         for j in range(points.shape[0]):
             x = points[j, :, plot_axes[i][0]]

@@ -611,15 +611,30 @@ def df3d_scatter_plots(points3D):
         yield frame
 
 def df3d_line_plots(points3D, connections, colors):
-    limits = (
-            (np.min(points3D[:, :, 0]), np.max(points3D[:, :, 0])),
-            (np.min(points3D[:, :, 1]), np.max(points3D[:, :, 1])),
-            (np.min(points3D[:, :, 2]), np.max(points3D[:, :, 2])),
-            )
-    for frame_points in points3D:
+    if isinstance(points3D, np.ndarray):
+        points3D = [points3D,]
+    all_limits = np.zeros((len(points3D), 3, 2))
+    for i, p in enumerate(points3D):
+        for j in range(3):
+            all_limits[i, j] = (np.min(p[:, :, j]), np.max(p[:, :, j]))
+    limits = np.zeros((3, 2))
+    limits[:, 0] = np.min(all_limits, axis=0)[:, 0]
+    limits[:, 1] = np.max(all_limits, axis=0)[:, 1]
+
+    frame_points = []
+    frame_number = 0
+    while True:
+        for p in points3D:
+            try:
+                frame_points.append(p[frame_number])
+            except IndexError:
+                continue
+        if len(frame_points) == 0:
+            break
         frame = plot_df3d_lines(frame_points, limits, connections, colors)
         yield frame
-
+        frame_points = []
+        frame_number += 1
 
 def df3d_line_plots_aligned(aligned, fixed_coxa=True):
     n_frames = len(aligned["LF_leg"]["Femur"]["raw_pos_aligned"])
@@ -643,13 +658,16 @@ def df3d_line_plots_aligned(aligned, fixed_coxa=True):
     return df3d_line_plots(points3D, connections, colors)
 
 
-def df3d_line_plots_df(df):
-    n_frames = df.shape[0]
-    points3D = np.zeros((n_frames, 30, 3))
-    for i, leg in enumerate(["LF_leg", "LM_leg", "LH_leg", "RF_leg", "RM_leg", "RH_leg"]):
-        for j, joint in enumerate(["Coxa", "Femur", "Tibia", "Tarsus", "Claw"]):
-            for k, axes in enumerate(["x", "y", "z"]):
-                points3D[:, i * 5 + j, k] = df["_".join(["Pose_", leg, joint, axes])].values
+def df3d_line_plots_df(df, groupby=None):
+    all_points3D = []
+    for _, sub_df in df.groupby(groupby):
+        n_frames = sub_df.shape[0]
+        points3D = np.zeros((n_frames, 30, 3))
+        for i, leg in enumerate(["LF_leg", "LM_leg", "LH_leg", "RF_leg", "RM_leg", "RH_leg"]):
+            for j, joint in enumerate(["Coxa", "Femur", "Tibia", "Tarsus", "Claw"]):
+                for k, axes in enumerate(["x", "y", "z"]):
+                    points3D[:, i * 5 + j, k] = sub_df["_".join(["Pose_", leg, joint, axes])].values
+        all_points3D.append(points3D)
 
     connections = [
               np.array((0, 1, 2, 3, 4), dtype=np.int),
@@ -660,7 +678,7 @@ def df3d_line_plots_df(df):
               np.array((25, 26, 27, 28, 29), dtype=np.int),
               ]
     colors = ["r", "g", "b", "c", "m", "y"]
-    return df3d_line_plots(points3D, connections, colors)
+    return df3d_line_plots(all_points3D, connections, colors)
 
 
 def df3d_line_plots_comparison(points3D, connections, colors, linestyles, labels, title=None):

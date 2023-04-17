@@ -11,7 +11,7 @@ def plot_drosophila_3d(
         ax_3d,
         points3d,
         cam_id,
-        bones=config["bones"],
+        bones=[0],#config["bones"],
         ang=None,
         draw_joints=None,
         colors=None,

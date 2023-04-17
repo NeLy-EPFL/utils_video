@@ -1,6 +1,7 @@
 import glob
 import itertools
 import math
+from typing import Iterable
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -559,10 +560,14 @@ def change_points(generator, change_points, n_pause=1):
             yield image
 
 
-def add_stimulus_dot(generator, stimulus, radius=35, center=(50, 50), color=(255, 0, 0)):
-    color = np.array(color)
-    if np.ndim(color) == 1:
+def add_stimulus_dot(generator, stimulus, radius=35, center=(50, 50), color=None):
+    if color is None:
+        color = (int(255), int(0), int(0))
+        print('Color is not giving, taking the default (RED) and extending it...')
         color = [color,] * len(stimulus)
+    elif isinstance(color, Iterable):
+        print('Color is given as an array, continuing...')
+
     for i, image in enumerate(generator):
         if stimulus[i]:
             yield add_dot(image, radius=radius, center=center, color=color[i])

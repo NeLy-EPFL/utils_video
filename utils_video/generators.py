@@ -4,6 +4,7 @@ import math
 
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.colors
 import cv2
 import PIL
 import PIL.ImageFont
@@ -32,10 +33,18 @@ from .utils import (
 )
 
 
-def dff(stack, size=None, font_size=16):
-    vmin = np.percentile(stack, 0.5)
-    vmax = np.percentile(stack, 99.5)
-    norm = plt.Normalize(vmin, vmax)
+def dff(stack, size=None, font_size=16, vmin=None, vmax=None, log=False, background="black"):
+    if vmin is None:
+        vmin = np.percentile(stack, 0.5)
+    if vmax is None:
+        vmax = np.percentile(stack, 99.5)
+    if log:
+        if vmin > 0:
+            norm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
+        else:
+            norm = matplotlib.colors.SymLogNorm(linthresh=0.5, vmin=vmin, vmax=vmax)
+    else:
+        norm = plt.Normalize(vmin, vmax)
     cmap = plt.cm.jet
 
     if size is None:
@@ -47,7 +56,7 @@ def dff(stack, size=None, font_size=16):
         image_shape = resize_shape(image_shape, stack.shape[1:3])
         cbar_shape = (image_shape[0], cbar_width)
 
-    cbar = colorbar(norm, cmap, cbar_shape, font_size=font_size)
+    cbar = colorbar(norm, cmap, cbar_shape, font_size=font_size, background=background)
 
     def frame_generator():
         for frame in stack:
@@ -142,7 +151,11 @@ def merge_videos(paths, synchronization_indices=None, sort=False):
     return frame_generator()
 
 
-def grid(generators, ratio=4/3, allow_different_length=False):
+def grid(generators, ratio=4/3, allow_different_length=False, padding=None):
+    
+    if not isinstance(padding, tuple):
+        padding = (padding, padding)
+
     # Check that all generators have the same frame size.
     shape, generators[0] = get_generator_shape(generators[0])
     frame_size = shape[:2]
@@ -150,7 +163,7 @@ def grid(generators, ratio=4/3, allow_different_length=False):
         current_shape, generators[i + 1] = get_generator_shape(generator)
         current_frame_size = current_shape[:2]
         if not np.all(frame_size == current_frame_size):
-            raise ValueError("Generators do not have the same frame size.")
+            raise ValueError(f"Generators do not have the same frame size. Sizes are {frame_size} and {current_frame_size}.")
 
     n_generators = len(generators)
     n_rows, n_cols = grid_size(n_generators, frame_size, ratio=ratio)
@@ -162,10 +175,10 @@ def grid(generators, ratio=4/3, allow_different_length=False):
 
     rows = []
     for row in range(n_rows):
-        row_generator = stack(generators[row * n_cols : (row + 1) * n_cols], axis=1, allow_different_length=allow_different_length)
+        row_generator = stack(generators[row * n_cols : (row + 1) * n_cols], axis=1, allow_different_length=allow_different_length, padding=padding[1])
         rows.append(row_generator)
 
-    grid_generator = stack(rows, axis=0, allow_different_length=allow_different_length)
+    grid_generator = stack(rows, axis=0, allow_different_length=allow_different_length, padding=padding[0])
     return grid_generator
 
 
@@ -272,25 +285,26 @@ def images(path, size=None, start=0):
         yield img
 
 
-def video(path, size=None, start=0):
+def video(path, size=None, start=0, stop=np.inf):
     try:
         cap = cv2.VideoCapture(path)
 
         if cap.isOpened() == False:
             raise RuntimeError(f"Error opening video stream or file at {path}.")
 
-        current_frame = 0
-        while cap.isOpened():
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start)
+        frame_idx = start
+        while cap.isOpened() and frame_idx < stop:
             ret, frame = cap.read()
-            if ret == True and current_frame >= start:
+            if ret == True:
                 if size is not None:
                     shape = resize_shape(size, frame.shape[:2])
                     frame = cv2.resize(frame, shape[::-1])
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
                 yield frame
+                frame_idx += 1
             elif ret == False:
                 break
-            current_frame += 1
     finally:
         cap.release()
 
@@ -372,7 +386,7 @@ def crop_generator(generator, n):
             return
 
 
-def stack(generators, axis=0, allow_different_length=False):
+def stack(generators, axis=0, allow_different_length=False, padding=None):
     """
     CAUTION: if you allow_different_length you MUST terminate
     the video using the n_frames parameter of the make_video function.
@@ -391,6 +405,13 @@ def stack(generators, axis=0, allow_different_length=False):
         # Find target shapes
         shapes = match_greatest_resolution(shapes, axis=(axis + 1) % 2)
 
+        if padding is not None:
+            if axis == 0:
+                padding_img = np.zeros((padding, *img.shape[1:]), dtype=img.dtype)
+            if axis == 1:
+                padding_img = np.zeros((img.shape[0], padding, *img.shape[2:]), dtype=img.dtype)
+            padding_imgs = tuple([padding_img,] * (len(generators) - 1))
+
         for imgs in zip(*generators):
             # Resize images
             imgs = list(imgs)
@@ -399,6 +420,9 @@ def stack(generators, axis=0, allow_different_length=False):
                     img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
                 imgs[i] = cv2.resize(img, shape[::-1])
 
+            if padding is not None:
+                # Interleave images with padding images
+                imgs = [x for x in itertools.chain(*itertools.zip_longest(imgs, padding_imgs)) if x is not None]
             yield np.concatenate(imgs, axis=axis)
 
     return frame_generator()
@@ -535,10 +559,13 @@ def change_points(generator, change_points, n_pause=1):
             yield image
 
 
-def add_stimulus_dot(generator, stimulus):
+def add_stimulus_dot(generator, stimulus, radius=35, center=(50, 50), color=(255, 0, 0)):
+    color = np.array(color)
+    if np.ndim(color) == 1:
+        color = [color,] * len(stimulus)
     for i, image in enumerate(generator):
         if stimulus[i]:
-            yield add_dot(image)
+            yield add_dot(image, radius=radius, center=center, color=color[i])
         else:
             yield image
 
@@ -584,15 +611,30 @@ def df3d_scatter_plots(points3D):
         yield frame
 
 def df3d_line_plots(points3D, connections, colors):
-    limits = (
-            (np.min(points3D[:, :, 0]), np.max(points3D[:, :, 0])),
-            (np.min(points3D[:, :, 1]), np.max(points3D[:, :, 1])),
-            (np.min(points3D[:, :, 2]), np.max(points3D[:, :, 2])),
-            )
-    for frame_points in points3D:
+    if isinstance(points3D, np.ndarray):
+        points3D = [points3D,]
+    all_limits = np.zeros((len(points3D), 3, 2))
+    for i, p in enumerate(points3D):
+        for j in range(3):
+            all_limits[i, j] = (np.min(p[:, :, j]), np.max(p[:, :, j]))
+    limits = np.zeros((3, 2))
+    limits[:, 0] = np.min(all_limits, axis=0)[:, 0]
+    limits[:, 1] = np.max(all_limits, axis=0)[:, 1]
+
+    frame_points = []
+    frame_number = 0
+    while True:
+        for p in points3D:
+            try:
+                frame_points.append(p[frame_number])
+            except IndexError:
+                continue
+        if len(frame_points) == 0:
+            break
         frame = plot_df3d_lines(frame_points, limits, connections, colors)
         yield frame
-
+        frame_points = []
+        frame_number += 1
 
 def df3d_line_plots_aligned(aligned, fixed_coxa=True):
     n_frames = len(aligned["LF_leg"]["Femur"]["raw_pos_aligned"])
@@ -614,6 +656,30 @@ def df3d_line_plots_aligned(aligned, fixed_coxa=True):
               ]
     colors = ["r", "g", "b", "c", "m", "y"]
     return df3d_line_plots(points3D, connections, colors)
+
+
+def df3d_line_plots_df(df, groupby=None):
+    all_points3D = []
+    for _, sub_df in df.groupby(groupby):
+        n_frames = sub_df.shape[0]
+        points3D = np.zeros((n_frames, 30, 3))
+        for i, leg in enumerate(["LF_leg", "LM_leg", "LH_leg", "RF_leg", "RM_leg", "RH_leg"]):
+            for j, joint in enumerate(["Coxa", "Femur", "Tibia", "Tarsus", "Claw"]):
+                for k, axes in enumerate(["x", "y", "z"]):
+                    points3D[:, i * 5 + j, k] = sub_df["_".join(["Pose_", leg, joint, axes])].values
+        all_points3D.append(points3D)
+
+    connections = [
+              np.array((0, 1, 2, 3, 4), dtype=np.int),
+              np.array((5, 6, 7, 8, 9), dtype=np.int),
+              np.array((10, 11, 12, 13, 14), dtype=np.int),
+              np.array((15, 16, 17, 18, 19), dtype=np.int),
+              np.array((20, 21, 22, 23, 24), dtype=np.int),
+              np.array((25, 26, 27, 28, 29), dtype=np.int),
+              ]
+    colors = ["r", "g", "b", "c", "m", "y"]
+    return df3d_line_plots(all_points3D, connections, colors)
+
 
 def df3d_line_plots_comparison(points3D, connections, colors, linestyles, labels, title=None):
     if type(points3D) != list:

@@ -4,12 +4,11 @@ import itertools
 
 import cv2
 from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import axes3d, Axes3D
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+#from pandas.plotting._tools import _subplots, _flatten
 
-# from pandas.plotting._tools import _subplots, _flatten
-
-import deepfly.plot_util
+from .plot_util import plot_drosophila_3d
 
 dpi = 100
 img3d_aspect = (2, 2)
@@ -152,20 +151,36 @@ def fig_to_array(fig):
     return data
 
 
-def colorbar(norm, cmap, size, orientation="vertical", font_size=16):
+def colorbar(norm, cmap, size, orientation="vertical", font_size=16, background="black",
+             label=r"%$\frac{\Delta F}{F}$"):
     if orientation not in ["horizontal", "vertical"]:
         raise ValueError("""orientation can only be "horizontal" or "vertical".""")
 
     figsize = (size[1] / dpi, size[0] / dpi)
 
-    with plt.rc_context(
-        {
+    if background == "black":
+        config = {
             "axes.edgecolor": "white",
             "xtick.color": "white",
             "ytick.color": "white",
             "figure.facecolor": "black",
             "font.size": font_size,
+            "text.color": "white",
         }
+    elif background == "white":
+        config = {
+            "axes.edgecolor": "black",
+            "xtick.color": "black",
+            "ytick.color": "black",
+            "figure.facecolor": "white",
+            "font.size": font_size,
+            "text.color": "black",
+        }
+    else:
+        raise ValueError(f"Unknown background color {background}")
+
+    with plt.rc_context(
+        config
     ):
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         plt.imshow(np.random.rand(100).reshape((10, 10)))
@@ -175,11 +190,12 @@ def colorbar(norm, cmap, size, orientation="vertical", font_size=16):
             orientation=orientation,
             fraction=1,
         )
+        color_bar.ax.tick_params(labelsize=font_size)
         if orientation == "horizontal":
-            color_bar.ax.set_xlabel(r"%$\frac{\Delta F}{F}$", rotation=0, color="white")
+            color_bar.ax.set_xlabel(label, rotation=0, color="white", fontsize=font_size)
         else:
             color_bar.ax.set_ylabel(
-                r"%$\frac{\Delta F}{F}$", rotation=0, color="white", labelpad=15
+                label, rotation=0, color=config["text.color"], labelpad=15, fontsize=font_size
             )
         ax.remove()
         data = fig_to_array(fig)
@@ -259,7 +275,7 @@ def plot_df3d_pose(points3d):
     ax3d.set_yticks([])
     ax3d.set_zticks([])
 
-    deepfly.plot_util.plot_drosophila_3d(ax3d, points3d.copy(), cam_id=2, lim=2)
+    plot_drosophila_3d(ax3d, points3d.copy(), cam_id=2, lim=2)
 
     data = fig_to_array(fig)
     plt.close()
@@ -283,7 +299,7 @@ def roi_image(background, mask, connectivity=4, min_size=0, cm="autumn"):
         Minimum size of a connected component to be considered a ROI.
     cm : string
         Name of the matplotlib color map used.
-    
+
     Returns
     -------
     img : numpy array 3D
@@ -347,6 +363,7 @@ def ridge_line_plot(
     overlap=1,
     size=(720, 432),
     font_size=16,
+    background="black",
 ):
     """
     This function creates a ridge line plot of all signals.
@@ -388,15 +405,29 @@ def ridge_line_plot(
         xlim = (np.min(t), np.max(t))
     num_axes = signals.shape[0]
     clip_on = True
-    with plt.rc_context(
-        {
+
+    if background == "black":
+        config = {
             "axes.edgecolor": "white",
             "xtick.color": "white",
             "ytick.color": "white",
             "figure.facecolor": "black",
             "font.size": font_size,
+            "text.color": "white",
         }
-    ):
+    elif background == "white":
+        config = {
+            "axes.edgecolor": "black",
+            "xtick.color": "black",
+            "ytick.color": "black",
+            "figure.facecolor": "white",
+            "font.size": font_size,
+            "text.color": "black",
+        }
+    else:
+        raise ValueError(f"Unknown background color {background}.")
+
+    with plt.rc_context(config):
         fig_ridge, axes = _subplots(
             naxes=num_axes,
             squeeze=False,
@@ -432,7 +463,7 @@ def ridge_line_plot(
         )
 
         _axes[-1].set_xlabel("Time (s)", color="white")
-        _axes[int(num_axes / 2)].set_ylabel("Neuron", color="white", labelpad=40)
+        _axes[int(num_axes / 2)].set_ylabel("Neuron", color=config["text.color"], labelpad=40)
 
         h_pad = 5 + (-5 * (1 + overlap))
         fig_ridge.tight_layout(h_pad=h_pad)
@@ -555,8 +586,8 @@ def rgb(red, green, blue, alpha):
     return rgb_array
 
 
-def add_dot(image):
-    image = cv2.circle(image, (50, 50), 35, (255, 0, 0), -1)
+def add_dot(image, radius=35, center=(50, 50), color=(255, 0, 0)):
+    image = cv2.circle(image, center, radius, color, -1)
     return image
 
 
@@ -624,6 +655,9 @@ def plot_df3d_lines(points, limits, connections, colors, labels=None, linestyles
 
     if type(colors[0]) != list:
         colors = [colors,] * len(points)
+
+    if len(linestyles) == 1 and len(points) != 1:
+        linestyles = linestyles * len(points)
 
     for i in range(3):
         for j in range(points.shape[0]):

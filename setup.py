@@ -14,6 +14,6 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/NeLy-EPFL/utils_video.git",
-    install_requires=["pytest", "numpy", "matplotlib", "opencv-python", "tqdm", "df3d"],
-    entry_points={"console_scripts": ["compress_video = utils_video.compress_video"]},
+    install_requires=["pytest", "numpy", "matplotlib", "opencv-python", "tqdm"],
+    entry_points={"console_scripts": ["compress_video = utils_video.compress_video:main"]},
 )

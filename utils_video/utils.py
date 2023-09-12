@@ -9,7 +9,7 @@ import numpy as np
 
 #from pandas.plotting._tools import _subplots, _flatten
 
-import deepfly.plot_util
+# import deepfly.plot_util
 
 dpi = 100
 img3d_aspect = (2, 2)
@@ -265,6 +265,7 @@ def natsorted(list_of_strs):
 
 
 def plot_df3d_pose(points3d):
+    """
     plt.style.use("dark_background")
     fig = plt.figure(figsize=img3d_aspect, dpi=dpi)
     fig.tight_layout(pad=0)
@@ -281,6 +282,8 @@ def plot_df3d_pose(points3d):
     data = fig_to_array(fig)
     plt.close()
     return data
+    """
+    return None
 
 
 def roi_image(background, mask, connectivity=4, min_size=0, cm="autumn"):

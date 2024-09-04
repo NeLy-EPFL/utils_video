@@ -9,7 +9,7 @@ import numpy as np
 
 #from pandas.plotting._tools import _subplots, _flatten
 
-import deepfly.plot_util
+#import deepfly.plot_util
 
 dpi = 100
 img3d_aspect = (2, 2)

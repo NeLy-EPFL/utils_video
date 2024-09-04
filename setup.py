@@ -9,11 +9,11 @@ setup(
     version="0.1",
     packages=["utils_video",],
     author="Florian Aymanns",
-    author_email="florian.ayamnns@epfl.ch",
+    author_email="florian.aymanns@epfl.ch",
     description="Basic utility functions for plotting videos with 2p data and behaviour.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/NeLy-EPFL/utils_video.git",
-    install_requires=["pytest", "numpy", "matplotlib", "opencv-python", "tqdm"],
+    install_requires=["pytest", "numpy", "matplotlib", "opencv-python>=4.8.1", "tqdm"],
     entry_points={"console_scripts": ["compress_video = utils_video.compress_video:main"]},
 )
